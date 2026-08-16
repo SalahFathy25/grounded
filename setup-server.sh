@@ -11,7 +11,7 @@ fi
 
 echo "=== 2) Cloning the project ==="
 if [ ! -d /opt/shopverse/.git ]; then
-  git clone https://github.com/SalahFathy25/shopverse.git /opt/shopverse
+  git clone https://github.com/SalahFathy25/grounded.git /opt/shopverse
 fi
 cd /opt/shopverse
 

@@ -9,35 +9,35 @@
 
 1. افتح https://neon.tech واعمل **Sign up** (إيميلك أو GitHub)
 2. اعمل مشروع جديد: **Projects → New Project**
-   - Name: `shopverse` — Region: أقرب ليك (مثلاً eu-central-1) — **Create**
+   - Name: `grounded` — Region: أقرب ليك (مثلاً eu-central-1) — **Create**
 3. هيظهر الاتصال: **Connection string** → خد نسخة محفوظة من شكلها:
    ```
-   postgresql://USER:PASSWORD@ep-xxx.REGION.aws.neon.tech/shopverse
+   postgresql://USER:PASSWORD@ep-xxx.REGION.aws.neon.tech/grounded
    ```
 4. اقسمها كالتالي (مهم) 🔽
    - `DB_HOST` = `ep-xxx.REGION.aws.neon.tech`
    - `DB_USER` = `USER` (اللي قبل الكولون)
    - `DB_PASSWORD` = `PASSWORD` (اللي بين الكولون و @)
-   - اسم القاعدة = `shopverse`
+   - اسم القاعدة = `grounded`
 
 ---
 
 ## الخطوة 2 — الـ backend على Render (مجاني)
 
 1. افتح https://render.com → **Sign up** → **GitHub** (نفس حسابك — repo موجود عندنا)
-2. من **Dashboard → New → Blueprint**، اختار repo: `SalahFathy25/shopverse` → رايح يقرا ملف `render.yaml` تلقائيًا
+2. من **Dashboard → New → Blueprint**، اختار repo: `SalahFathy25/grounded` → رايح يقرا ملف `render.yaml` تلقائيًا
 3. هيطلب منك تعبي 4 متغيرات (`sync: false`) 🔽
    - `DB_URL` =
      ```
-     jdbc:postgresql://ep-xxx.REGION.aws.neon.tech/shopverse?sslmode=require
+     jdbc:postgresql://ep-xxx.REGION.aws.neon.tech/grounded?sslmode=require
      ```
    - `DB_USER` = الـ USER اللي خدته من Neon
    - `DB_PASSWORD` = الـ PASSWORD بتاع Neon
    - `ADMIN_INITIAL_PASSWORD` = اكتب كلمة سر قوية للأدمن (احفظها!)
-   - `CORS_ORIGINS` = مؤقتًا خد الذيل: `https://shopverse.vercel.app` (تعرفها في الخطوة 3 وبعدين ارجع عدّلها بأي مرة)
+   - `CORS_ORIGINS` = مؤقتًا خد الذيل: `https://grounded.vercel.app` (تعرفها في الخطوة 3 وبعدين ارجع عدّلها بأي مرة)
 4. **Apply** → هيبني وينشر تلقائيًا (5-10 دقايق)
-5. هتاخد رابط بيفتح كده: `https://shopverse-api.onrender.com`
-   - اختبره من المتصفح: `https://shopverse-api.onrender.com/api/v1/settings` → لازم يرجع JSON فيه `store_name_en`
+5. هتاخد رابط بيفتح كده: `https://grounded-api.onrender.com`
+   - اختبره من المتصفح: `https://grounded-api.onrender.com/api/v1/settings` → لازم يرجع JSON فيه `store_name_en`
 
 > ⚠️ المستوى المجاني: بعد ١٥ دقيقة من غير زيارة، الباك "بينام" — أول زيارة بتاخد ٣٠-٦٠ ثانية وبعدها يشتغل عادي.
 
@@ -46,16 +46,16 @@
 ## الخطوة 3 — الواجهة على Vercel (مجاني)
 
 1. افتح https://vercel.com → **Sign up with GitHub** → **Continue**
-2. **Add New → Project** → اختار `SalahFathy25/shopverse`
+2. **Add New → Project** → اختار `SalahFathy25/grounded`
 3. في **Root Directory** اختار: `frontend` (مهم!)
 4. في **Environment Variables** أضف:
    - `VITE_USE_MOCK` = `false`
-   - `VITE_API_URL` = `https://shopverse-api.onrender.com/api/v1`
-5. **Deploy** → بعدها هتاخد رابط زي: `https://shopverse.vercel.app`
+   - `VITE_API_URL` = `https://grounded-api.onrender.com/api/v1`
+5. **Deploy** → بعدها هتاخد رابط زي: `https://grounded.vercel.app`
 
 6. **رجع لـ Render** → مرجع: Environment → `CORS_ORIGINS` غيّرها إلى:
    ```
-   https://shopverse.vercel.app
+   https://grounded.vercel.app
    ```
    → **Save** → **Manual Deploy → Deploy latest** (أو بيحدث لوحده بسبب autoDeploy)
 
@@ -63,8 +63,8 @@
 
 ## الخطوة 4 — تشغيل المتجر
 
-افتح `https://shopverse.vercel.app`:
-- الأدمن: `https://shopverse.vercel.app/admin/login` — بـ `admin@grounded.store` + كلمة السر اللي كتبتها في Render
+افتح `https://grounded.vercel.app`:
+- الأدمن: `https://grounded.vercel.app/admin/login` — بـ `admin@grounded.store` + كلمة السر اللي كتبتها في Render
 - المنتجات والبيانات بتتبقى **في قاعدة بيانات Neon** — دائمة وموجودة حتى لو Render نام أو Vercel اتقفل
 
 ---

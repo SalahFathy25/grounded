@@ -38,7 +38,7 @@ ssh root@IP_ADDRESS
 الصق الأمر ده في السيرفر وادوس Enter:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/SalahFathy25/shopverse/main/setup-server.sh | bash
+curl -fsSL https://raw.githubusercontent.com/SalahFathy25/grounded/main/setup-server.sh | bash
 ```
 
 هيشتغل حوالي 5-10 دقايق (تثبيت Docker + بناء + تشغيل) وبعدها هيطبع لك:

@@ -44,8 +44,8 @@ spring:
     activate:
       on-profile: postgres
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/ecommerce}
-    username: ${DB_USER:shopverse}
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/grounded}
+    username: ${DB_USER:grounded}
     password: ${DB_PASSWORD:shopverse}
   jpa:
     hibernate:
