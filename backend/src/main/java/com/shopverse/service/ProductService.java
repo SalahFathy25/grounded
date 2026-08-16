@@ -42,7 +42,7 @@ public class ProductService {
             default -> PageRequest.of(page, size, Sort.by("createdAt").descending());
         };
         Page<Product> result = productRepository.search(activeOnly, categoryId,
-                keyword == null || keyword.isBlank() ? null : keyword.trim(), minPrice, maxPrice, pageable);
+                keyword == null || keyword.isBlank() ? null : "%" + keyword.trim().toLowerCase() + "%", minPrice, maxPrice, pageable);
         return new ProductDtos.PageResponse<>(
                 result.getContent().stream().map(this::toDto).toList(),
                 result.getTotalElements(),

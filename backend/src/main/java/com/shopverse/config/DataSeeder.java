@@ -57,8 +57,8 @@ public class DataSeeder implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
-        settingsService.ensure();
-        contentService.ensure();
+        settingsService.ensureIsolated();
+        contentService.ensureIsolated();
 
         if (userRepository.count() > 0) {
             return;

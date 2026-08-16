@@ -88,4 +88,4 @@ The Vite dev server already proxies `/api` → `http://localhost:8080`. Configur
 - [x] Backend source complete (H2/Postgres, JWT, seeding) — run with Java 17+
 - [ ] Real Paymob/Tap integration
 - [ ] Cloudinary image upload
-- [ ] Production deployment (Vercel + Railway/Render)
+- [ ] Production deployment — no-card path ready: backend via Cloudflare Tunnel on your PC (see [`DEPLOY-TUNNEL.md`](./DEPLOY-TUNNEL.md))

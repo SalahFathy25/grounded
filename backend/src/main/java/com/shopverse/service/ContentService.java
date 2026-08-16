@@ -5,7 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shopverse.domain.StoreContent;
 import com.shopverse.repository.StoreContentRepository;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
@@ -61,11 +63,21 @@ public class ContentService {
                 c.setId(CONTENT_ID);
                 c.setContentJson(json);
                 c.setUpdatedAt(LocalDateTime.now());
-                return repository.save(c);
+                try {
+                    return repository.save(c);
+                } catch (DataIntegrityViolationException e) {
+                    return repository.findById(CONTENT_ID).orElse(c);
+                }
             } catch (IOException e) {
                 throw new IllegalStateException("default-content.json is missing from classpath", e);
             }
         });
+    }
+
+    /** Same as {@link #ensure()}, but runs in its own transaction (see SettingsService#ensureIsolated). */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public StoreContent ensureIsolated() {
+        return ensure();
     }
 
     private Map<String, Object> parse(String json) {

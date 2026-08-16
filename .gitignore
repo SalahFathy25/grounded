@@ -5,7 +5,10 @@ target/
 *.jar
 .env
 .env.local
+local.env
+tunnel-url.txt
 .idea/
 .vscode/
 *.log
 .DS_Store
+credentials*.txt

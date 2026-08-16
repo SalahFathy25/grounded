@@ -18,13 +18,16 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
               AND (:categoryId IS NULL OR p.category.id = :categoryId)
               AND (:minPrice IS NULL OR p.price >= :minPrice)
               AND (:maxPrice IS NULL OR p.price <= :maxPrice)
-              AND (:keyword IS NULL OR LOWER(CONCAT(p.name, ' ', COALESCE(p.description, ''), ' ',
-                   COALESCE(p.tags, ''), ' ', COALESCE(p.brand, ''), ' ', COALESCE(p.material, '')))
-                   LIKE LOWER(CONCAT('%', :keyword, '%')))
+              AND (:kwPattern IS NULL OR
+                   LOWER(p.name) LIKE :kwPattern OR
+                   LOWER(p.description) LIKE :kwPattern OR
+                   LOWER(p.tags) LIKE :kwPattern OR
+                   LOWER(p.brand) LIKE :kwPattern OR
+                   LOWER(p.material) LIKE :kwPattern)
             """)
     Page<Product> search(@Param("activeOnly") boolean activeOnly,
                          @Param("categoryId") Long categoryId,
-                         @Param("keyword") String keyword,
+                         @Param("kwPattern") String kwPattern,
                          @Param("minPrice") java.math.BigDecimal minPrice,
                          @Param("maxPrice") java.math.BigDecimal maxPrice,
                          Pageable pageable);

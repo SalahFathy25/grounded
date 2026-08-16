@@ -2,7 +2,9 @@ package com.shopverse.service;
 
 import com.shopverse.domain.StoreSettings;
 import com.shopverse.repository.StoreSettingsRepository;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -94,8 +96,19 @@ public class SettingsService {
             s.setFacebookUrl("");
             s.setTiktokUrl("");
             s.setUpdatedAt(LocalDateTime.now());
-            return repository.save(s);
+            try {
+                return repository.save(s);
+            } catch (DataIntegrityViolationException e) {
+                return repository.findById(SETTINGS_ID).orElse(s);
+            }
         });
+    }
+
+    /** Same as {@link #ensure()}, but runs in its own transaction so a seeding-time
+     *  insert conflict can never poison the surrounding (seeder) transaction. */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public StoreSettings ensureIsolated() {
+        return ensure();
     }
 
     private void setString(StoreSettings s, String key, String value) {

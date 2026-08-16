@@ -9,4 +9,4 @@ FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 COPY --from=build /app/target/shopverse-api-0.1.0.jar app.jar
 EXPOSE 8080
-ENTRYPOINT ["java", "-Xmx512m", "-XX:+ExitOnOutOfMemoryError", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-Xmx384m", "-XX:MaxMetaspaceSize=192m", "-XX:+ExitOnOutOfMemoryError", "-jar", "app.jar"]
