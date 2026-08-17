@@ -17,3 +17,5 @@ data/
 credentials*.txt
 deploy/
 *.zip
+.vercel
+.env*
