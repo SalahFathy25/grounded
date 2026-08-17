@@ -938,7 +938,7 @@ export const translations = {
     'login.signIn': 'تسجيل الدخول',
     'login.signingIn': 'جاري الدخول…',
     'login.noAccount': 'مفيش عندك حساب؟',
-    'login.createOne': 'اعمل واحد',
+    'login.createOne': 'اعمل ايميل جديد',
     'login.demoTitle': 'بيانات الدخول التجريبية',
     'login.demoAdmin': 'أدمن تجريبي:',
     'login.demoCustomer': 'عميل تجريبي:',
