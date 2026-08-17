@@ -121,7 +121,7 @@ export default function Navbar() {
   const telHref = `tel:+${(settings.support_phone || '+20 100 000 0000').replace(/\D/g, '')}`
 
   const navLink = ({ isActive }) =>
-    `rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${isActive ? 'text-gold-deep bg-gold-tint' : 'text-ink-soft hover:text-ink hover:bg-ink/5'}`
+    `whitespace-nowrap rounded-lg px-2 py-2 text-sm font-semibold transition-colors ${isActive ? 'text-gold-deep bg-gold-tint' : 'text-ink-soft hover:text-ink hover:bg-ink/5'}`
 
   return (
     <>
@@ -141,7 +141,7 @@ export default function Navbar() {
         </div>
       )}
       <header className="sticky top-0 z-40 border-b border-line bg-paper/85 backdrop-blur-lg">
-      <div className="mx-auto flex h-16 max-w-7xl items-center gap-3 px-4 sm:gap-5">
+      <div className="mx-auto flex h-16 max-w-7xl items-center gap-2 px-4 sm:gap-3 lg:gap-4">
         <div className={`pointer-events-none absolute inset-x-0 -bottom-px h-px bg-gradient-to-r from-transparent via-gold/60 to-transparent ${menuOpen ? 'opacity-0' : ''}`} aria-hidden="true" />
         <button
           type="button"
@@ -158,12 +158,12 @@ export default function Navbar() {
         <nav className="hidden items-center gap-1 lg:flex" aria-label="Main navigation">
           <NavLink to="/" className={navLink} end>{t('nav.home')}</NavLink>
           <NavLink to="/products" className={navLink}>{t('nav.shop')}</NavLink>
-          <a href="#about" onClick={e => handleSection(e, 'about')} className="rounded-lg px-3 py-2 text-sm font-semibold text-ink-soft transition-colors hover:bg-ink/5 hover:text-ink">{t('nav.about')}</a>
-          <a href="#faq" onClick={e => handleSection(e, 'faq')} className="rounded-lg px-3 py-2 text-sm font-semibold text-ink-soft transition-colors hover:bg-ink/5 hover:text-ink">{t('nav.faq')}</a>
-          <Link to="/my-orders" className="rounded-lg px-3 py-2 text-sm font-semibold text-ink-soft transition-colors hover:bg-ink/5 hover:text-ink">{t('nav.track')}</Link>
+          <a href="#about" onClick={e => handleSection(e, 'about')} className="whitespace-nowrap rounded-lg px-2 py-2 text-sm font-semibold text-ink-soft transition-colors hover:bg-ink/5 hover:text-ink">{t('nav.about')}</a>
+          <a href="#faq" onClick={e => handleSection(e, 'faq')} className="whitespace-nowrap rounded-lg px-2 py-2 text-sm font-semibold text-ink-soft transition-colors hover:bg-ink/5 hover:text-ink">{t('nav.faq')}</a>
+          <Link to="/my-orders" className="whitespace-nowrap rounded-lg px-2 py-2 text-sm font-semibold text-ink-soft transition-colors hover:bg-ink/5 hover:text-ink">{t('nav.track')}</Link>
         </nav>
 
-        <SearchBar className="ms-auto hidden w-64 md:block lg:w-80" />
+        <SearchBar className="ms-auto hidden w-56 md:block lg:w-64" />
 
         <div className="ms-auto flex items-center gap-1 md:ms-0">
           <ThemeToggle compact />
@@ -226,9 +226,9 @@ export default function Navbar() {
                 )}
               </>
             ) : (
-              <div className="hidden items-center gap-2 sm:flex">
-                <Link to="/login" className="btn btn-ghost btn-sm">{t('nav.signIn')}</Link>
-                <Link to="/register" className="btn btn-primary btn-sm">{t('nav.createAccount')}</Link>
+              <div className="hidden items-center gap-1.5 sm:flex">
+                <Link to="/login" className="whitespace-nowrap rounded-lg px-2.5 py-2 text-sm font-semibold text-ink transition-colors hover:bg-ink/5">{t('nav.signIn')}</Link>
+                <Link to="/register" className="whitespace-nowrap rounded-lg bg-ink px-2.5 py-2 text-sm font-semibold text-paper transition-colors hover:bg-ink-soft active:scale-[0.98]">{t('nav.createAccount')}</Link>
               </div>
             )}
           </div>
