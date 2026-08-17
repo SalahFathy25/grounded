@@ -70,7 +70,7 @@ export default function Home() {
       {/* ============ HERO ============ */}
       <section className="relative overflow-hidden bg-ink text-paper">
         <img
-          src={hero.image}
+          src="/hero.jpg"
           alt=""
           loading="eager"
           className="absolute inset-0 h-full w-full object-cover object-[center_30%]"
