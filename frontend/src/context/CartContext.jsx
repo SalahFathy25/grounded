@@ -1,6 +1,7 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { useToast } from './ToastContext'
 import { useLang } from './LangContext'
+import { useAuth } from './AuthContext'
 import { salePrice } from '../lib/format'
 
 const CartContext = createContext(null)
@@ -16,10 +17,22 @@ function readCart() {
 }
 
 export function CartProvider({ children }) {
+  const { user } = useAuth()
   const [items, setItems] = useState(readCart)
   const [open, setOpen] = useState(false)
   const toast = useToast()
   const { t } = useLang()
+  const wasLoggedIn = useRef(false)
+
+  useEffect(() => {
+    if (user) {
+      wasLoggedIn.current = true
+    } else if (wasLoggedIn.current) {
+      // Logged out — drop the cart so it doesn't leak into the next session.
+      setItems([])
+      wasLoggedIn.current = false
+    }
+  }, [user])
 
   useEffect(() => {
     localStorage.setItem(CART_KEY, JSON.stringify(items))

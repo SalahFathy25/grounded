@@ -185,9 +185,6 @@ export default function Home() {
                     className="size-full scale-100 object-cover transition-transform duration-500 group-hover:scale-110"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-ink/85 via-ink/25 to-transparent" aria-hidden="true" />
-                  <span className="absolute end-3 top-3 grid size-9 -translate-y-1 place-items-center rounded-full bg-gold text-paper opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100" aria-hidden="true">
-                    <ArrowRight className="size-4" />
-                  </span>
                   <div className="absolute inset-x-0 bottom-0 p-4">
                     <p className="font-display text-lg uppercase tracking-wide text-paper">{catName(c, lang)}</p>
                     <p className="text-xs text-paper/60 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
