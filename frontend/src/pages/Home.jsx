@@ -98,7 +98,7 @@ export default function Home() {
                 {pick(hero.title1, lang)}
                 <br />
                 <span className="relative inline-block">
-                  <span className="bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500 bg-clip-text text-transparent">
+                  <span>
                     {pick(hero.title2, lang)}
                   </span>
                   <span className="absolute -bottom-2 start-0 h-1 w-3/4 rounded-full bg-gradient-to-r from-gold-bright to-transparent" aria-hidden="true" />
@@ -314,7 +314,7 @@ export default function Home() {
                     <h2 className="mt-5 font-display text-3xl uppercase leading-[1.04] tracking-tight sm:text-4xl lg:text-5xl">
                       {pick(h.about.title, lang)}
                       <br />
-                      <span className="bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500 bg-clip-text text-transparent">
+                      <span>
                         {pick(h.about.title2, lang)}
                       </span>
                     </h2>
