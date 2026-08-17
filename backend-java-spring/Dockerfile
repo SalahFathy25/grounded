@@ -1,0 +1,12 @@
+FROM maven:3.9-eclipse-temurin-17 AS build
+WORKDIR /app
+COPY backend/pom.xml .
+RUN mvn -q dependency:go-offline -B || true
+COPY backend/src ./src
+RUN mvn -q package -DskipTests -B
+
+FROM eclipse-temurin:17-jre-alpine
+WORKDIR /app
+COPY --from=build /app/target/shopverse-api-0.1.0.jar app.jar
+EXPOSE 8080
+ENTRYPOINT ["java", "-Xmx384m", "-XX:MaxMetaspaceSize=192m", "-XX:+ExitOnOutOfMemoryError", "-jar", "app.jar"]

@@ -1,6 +1,6 @@
 # Grounded - run backend locally + expose it via a public Cloudflare Tunnel URL
 # Usage:  .\run-backend-tunnel.ps1        (or: powershell -ExecutionPolicy Bypass -File .\run-backend-tunnel.ps1)
-# Requirements: Java 17+, Maven, cloudflared (winget install --id Cloudflare.cloudflared)
+# Requirements: Node.js 18+ (node on PATH), cloudflared (winget install --id Cloudflare.cloudflared)
 
 $ErrorActionPreference = 'Stop'
 $repo = $PSScriptRoot
@@ -31,20 +31,19 @@ try {
 }
 
 if (-not $alreadyUp) {
-    $mvn = Get-Command mvn -ErrorAction SilentlyContinue
-    $jar = Get-Item (Join-Path $repo 'backend\target\shopverse-api-0.1.0.jar') -ErrorAction SilentlyContinue
-    if (-not $mvn -and -not $jar) {
-        Write-Host "No Maven (mvn) and no built jar found. Build the jar first, or install Maven." -ForegroundColor Red
+    $node = Get-Command node -ErrorAction SilentlyContinue
+    if (-not $node) {
+        Write-Host "Node.js not found. Install it from https://nodejs.org and re-open this window." -ForegroundColor Red
         exit 1
     }
     $backendDir = Join-Path $repo 'backend'
-    Write-Host "Starting backend in a new cmd window (Neon / postgres profile)..." -ForegroundColor Cyan
-    if ($mvn) {
-        $backend = Start-Process -FilePath 'cmd.exe' -ArgumentList '/k', "cd /d `"$backendDir`" && mvn spring-boot:run" -PassThru
-    } else {
-        Write-Host "mvn not on PATH - using pre-built jar via run-server.cmd." -ForegroundColor Yellow
-        $backend = Start-Process -FilePath 'cmd.exe' -ArgumentList '/k', "cd /d `"$backendDir`" && run-server.cmd" -PassThru
+    if (-not (Test-Path (Join-Path $backendDir 'node_modules'))) {
+        Write-Host "Installing backend dependencies (first run)..." -ForegroundColor Cyan
+        Push-Location $backendDir
+        try { npm install --no-fund --no-audit } finally { Pop-Location }
     }
+    Write-Host "Starting backend in a new cmd window (SQLite by default, or Neon when DB_URL is set)..." -ForegroundColor Cyan
+    $backend = Start-Process -FilePath 'cmd.exe' -ArgumentList '/k', "cd /d `"$backendDir`" && node src/index.js" -PassThru
 
     Write-Host "Waiting for the backend to answer on :8080 (may take 1-2 min first time)..." -ForegroundColor Cyan
     $ready = $false
@@ -59,7 +58,7 @@ if (-not $alreadyUp) {
         }
     }
     if (-not $ready) {
-        Write-Host "Backend did not come up in time. Check the cmd window for errors (bad DB_URL / ports / MySQL)." -ForegroundColor Red
+        Write-Host "Backend did not come up in time. Check the cmd window for errors (bad DB_URL / port 8080 busy)." -ForegroundColor Red
         exit 1
     }
 }

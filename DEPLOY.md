@@ -66,9 +66,10 @@ cd /opt/shopverse && git pull && docker compose -f docker-compose.prod.yml up -d
 
 **النسخ الاحتياطي لقاعدة البيانات** (صورة كاملة):
 ```bash
-docker exec shopverse-db pg_dump -U shopverse ecommerce > backup.sql
+mkdir -p /opt/shopverse-data-backup
+docker cp shopverse-api:/app/data/ /opt/shopverse-data-backup/
 ```
-الاسترجاع: `docker exec -i shopverse-db psql -U shopverse ecommerce < backup.sql`
+الاسترجاع: `docker cp /opt/shopverse-data-backup/. shopverse-api:/app/data/ && docker restart shopverse-api`
 
 **سجل التشغيل:**
 ```bash
@@ -80,21 +81,22 @@ docker compose -f /opt/shopverse/docker-compose.prod.yml -p shopverse logs -f
 ## اختياري — ربط اسم دومين (بدل الـ IP)
 
 1. عندك دومين مثل `mystore.com` — في سجلات DNS أضف **A record** بقيمة IP السيرفر
-2. على السيرفر فعلّ HTTPS بيثبت سيرتفيكيت مجاني:
+2. على السيرفر فعلّ HTTPS بشهادة مجانية (Certbot يصدر الشهادة، والنود بيسرفها):
 ```bash
-apt install -y certbot python3-certbot-nginx
-certbot --nginx -d mystore.com -d www.mystore.com
+apt install -y certbot
+certbot certonly --standalone -d mystore.com -d www.mystore.com
+# ثم كرر كل فترة للتجديد: certbot renew
 ```
-(يحتاج تعديل `server_name` في `frontend/nginx.conf` من `_` لأهمية الدومين ثم rebuild)
+> ⚠️ الـ Node server بيرد على `:8080` — للوصول عليه على المنفذ 80 شغّل compose أو أضف nginx كـ reverse proxy.
 
 ---
 
 ## الأسئلة المتوقعة
 
-- **هل البيانات تترست؟** لأ — Postgres قايمة في مجلد خاص (`volume`) على السيرفر، بتفضل تلقائيًا.
+- **هل البيانات تترست؟** لأ — قاعدة البيانات في مجلد خاص (`volume` بحفظ SQLite) على السيرفر، بتفضل تلقائيًا.
 - **هل أول زيارة بتحط منتجات؟** أول تشغيل بس — بعدها أي تحرير ليك/للأدمن بيتبقى.
 - **الأمان؟** كل المتاجر غير المكشوفة — JWT سري مولّد، باسورد أدمن مولّد، قاعدة البيانات مش مفتوحة لخارج السيرفر، والواجهة + API على نفس العنوان.
 
 ---
 
-**تفاصيل تقنية (مرجع):** الـ backend Spring Boot بـ JVM 512MB، Postgres 16، nginx بيخدم ملفات React ويوصل `/api` للـ API — كلها في `docker-compose.prod.yml`.
+**تفاصيل تقنية (مرجع):** الـ backend **Node.js (Express)** بكونتينر واحد بيخدم الـ React static + الـ API معًا على المنفذ 80، وقاعدة بيانات **SQLite** ملف في volume (أو PostgreSQL اختياريًا لو حطيت `DB_URL`) — كلها في `docker-compose.prod.yml`.

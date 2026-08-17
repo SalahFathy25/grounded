@@ -7,8 +7,13 @@ target/
 .env.local
 local.env
 tunnel-url.txt
+data/
+*.sqlite
+*.sqlite3
 .idea/
 .vscode/
 *.log
 .DS_Store
 credentials*.txt
+deploy/
+*.zip

@@ -1,0 +1,44 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: shopverse-api
+  profiles:
+    active: dev
+  http:
+    converters:
+      preferred-json-mapper: gson
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:shopverse-dev-secret-change-me-in-production-0123456789}
+    expiration-ms: 86400000
+  cors-origins: ${CORS_ORIGINS:http://localhost:5173}
+  admin:
+    initial-password: ${ADMIN_INITIAL_PASSWORD:admin123}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+  datasource:
+    url: jdbc:h2:mem:shopverse;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+
+---
+spring:
+  config:
+    activate:
+      on-profile: postgres
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/grounded}
+    username: ${DB_USER:grounded}
+    password: ${DB_PASSWORD:shopverse}

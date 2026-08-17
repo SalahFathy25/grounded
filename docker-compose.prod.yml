@@ -1,51 +1,27 @@
-services:
-  db:
-    image: postgres:16-alpine
-    container_name: shopverse-db
-    environment:
-      POSTGRES_DB: grounded
-      POSTGRES_USER: grounded
-      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
-    volumes:
-      - shopverse-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U grounded"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-    restart: unless-stopped
+# Grounded — single-container deployment (API + React frontend + database)
+# Database: SQLite by default (persisted in the `grounded-data` volume).
+# Set DB_URL (postgres:// or jdbc:postgresql://) to use PostgreSQL instead.
 
+services:
   api:
     build:
       context: .
       dockerfile: backend/Dockerfile
-    container_name: shopverse-api
+    container_name: grounded-api
+    ports:
+      - "80:8080"
     environment:
-      SPRING_PROFILES_ACTIVE: postgres
-      DB_URL: jdbc:postgresql://db:5432/grounded
-      DB_USER: grounded
-      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      NODE_ENV: production
+      PORT: 8080
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       ADMIN_INITIAL_PASSWORD: ${ADMIN_INITIAL_PASSWORD:?Set ADMIN_INITIAL_PASSWORD in .env}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost}
-    depends_on:
-      db:
-        condition: service_healthy
-    restart: unless-stopped
-
-  web:
-    build:
-      context: .
-      dockerfile: frontend/Dockerfile
-      args:
-        VITE_API_URL: /api/v1
-        VITE_USE_MOCK: "false"
-    container_name: shopverse-web
-    ports:
-      - "80:80"
-    depends_on:
-      - api
+      DB_URL: ${DB_URL:-}
+      DB_USER: ${DB_USER:-}
+      DB_PASSWORD: ${DB_PASSWORD:-}
+    volumes:
+      - grounded-data:/app/data
     restart: unless-stopped
 
 volumes:
-  shopverse-data:
+  grounded-data:

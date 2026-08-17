@@ -8,20 +8,23 @@
 
 ---
 
-## الخطوة 1 — قاعدة بيانات مجانية دائمة (Neon)
+## الخطوة 1 — قاعدة بيانات مجانية دائمة (Neon) — اختيارية
+
+> الباك الجديد (Node) بيشتغل بملف SQLite من غير أي إعداد — بس **في Render المجاني الملف مش بيثبت** بعد الـ redeploy. فلو عايز بيانات دائمة (منتجاتك وطلباتك تفضل)، نزّل قاعدة من Neon: **الأفضل** لنا.
 
 1. افتح https://neon.tech واعمل **Sign up** (إيميلك أو GitHub)
 2. اعمل مشروع جديد: **Projects → New Project**
    - Name: `grounded` — Region: أقرب ليك (مثلاً eu-central-1) — **Create**
-3. هيظهر الاتصال: **Connection string** → خد نسخة محفوظة من شكلها:
+3. هيظهر الاتصال: **Connection string** → خد نسخة محفوظة منها (شكلها زي تحت):
    ```
    postgresql://USER:PASSWORD@ep-xxx.REGION.aws.neon.tech/grounded
    ```
 4. اقسمها كالتالي (مهم) 🔽
-   - `DB_HOST` = `ep-xxx.REGION.aws.neon.tech`
-   - `DB_USER` = `USER` (اللي قبل الكولون)
-   - `DB_PASSWORD` = `PASSWORD` (اللي بين الكولون و @)
-   - اسم القاعدة = `grounded`
+   - `DB_URL` =
+     ```
+     postgres://USER:PASSWORD@ep-xxx.REGION.aws.neon.tech/grounded?sslmode=require
+     ```
+   - (ممكن برضه بلغة جافا القديمة: `jdbc:postgresql://...` — الباك بيفهم الاتنين)
 
 ---
 
@@ -29,13 +32,8 @@
 
 1. افتح https://render.com → **Sign up** → **GitHub** (نفس حسابك — repo موجود عندنا)
 2. من **Dashboard → New → Blueprint**، اختار repo: `SalahFathy25/grounded` → رايح يقرا ملف `render.yaml` تلقائيًا
-3. هيطلب منك تعبي 4 متغيرات (`sync: false`) 🔽
-   - `DB_URL` =
-     ```
-     jdbc:postgresql://ep-xxx.REGION.aws.neon.tech/grounded?sslmode=require
-     ```
-   - `DB_USER` = الـ USER اللي خدته من Neon
-   - `DB_PASSWORD` = الـ PASSWORD بتاع Neon
+3. هيطلب منك تعبي المتغيرات (`sync: false`) 🔽
+   - `DB_URL` = الرابط اللي عملته في الخطوة 1 (لو سيبته فاضي: هيشتغل SQLite — للاختبار السريع بس)
    - `ADMIN_INITIAL_PASSWORD` = اكتب كلمة سر قوية للأدمن (احفظها!)
    - `CORS_ORIGINS` = مؤقتًا خد الذيل: `https://grounded.vercel.app` (تعرفها في الخطوة 3 وبعدين ارجع عدّلها بأي مرة)
 4. **Apply** → هيبني وينشر تلقائيًا (5-10 دقايق)

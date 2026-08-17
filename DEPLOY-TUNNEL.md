@@ -12,7 +12,7 @@
 
 ## المتطلبات
 
-- جهازك شغال فيه **Java 17+** و**Maven** (اللي كنت بتشغّل الباك بيهم)
+- جهازك شغال فيه **Node.js 18+** (نزّله من https://nodejs.org لو مش موجود)
 - اتصال إنترنت عادي
 
 ---
@@ -37,13 +37,15 @@ winget install --id Cloudflare.cloudflared
 في المجلد `E:\e_commerce` فيه ملف **`local.env`** (بعد إنشاءنا) — لازم يكون فيه:
 
 ```
-SPRING_PROFILES_ACTIVE=postgres
-DB_URL=jdbc:postgresql://...neon.tech/neondb?sslmode=require
-DB_USER=neondb_owner
-DB_PASSWORD=...(من credentials.local.txt)
 JWT_SECRET=...(طويل وعشوائي)
 ADMIN_INITIAL_PASSWORD=...(كلمة سر الأدمن)
 CORS_ORIGINS=http://localhost:5173,https://grounded.vercel.app
+```
+
+واختياريًا (عشان تخزن البيانات في **Neon** بدل ملف SQLite المحلي):
+
+```
+DB_URL=postgres://neondb_owner:...@...neon.tech/neondb?sslmode=require
 ```
 
 > الملف ده **مستبعد من git** (`local.env` في `.gitignore`) — الأسرار مش بتترفع على GitHub.
@@ -61,7 +63,7 @@ CORS_ORIGINS=http://localhost:5173,https://grounded.vercel.app
 (لو اتقفل بـ Policy: `powershell -ExecutionPolicy Bypass -File .\run-backend-tunnel.ps1`)
 
 السكربت بيعمل:
-1. يفتح نافذة cmd فيها **الباك** (postgres + Neon) — أول تشغيل ثواني-دقيقتين
+1. يفتح نافذة cmd فيها **الباك** (Node) — أول تشغيل يثبّت الحزم وثواني يشتغل
 2. يستنى إن الباك يرد على `http://localhost:8080/api/v1/settings`
 3. يفتح نفق Cloudflare ويطبع:
    ```
@@ -112,5 +114,5 @@ CORS_ORIGINS=http://localhost:5173,https://grounded.vercel.app
 |---|---|
 | `cloudflared not found` | نفّذ الخطوة 1 وأعد فتح PowerShell |
 | الباك مش بيرد على 8080 | شوف نافذة cmd — غالبًا DB_URL/كلمة السر غلط، قارنها بـ `credentials.local.txt` |
-| المنفذ 8080 مشغول من تشغيل قديم | اقفل نافذة الباك القديمة أو `stop-process -Name java` وشغّل السكربت تاني |
+| المنفذ 8080 مشغول من تشغيل قديم | اقفل نافذة الباك القديمة أو `stop-process -Name node` وشغّل السكربت تاني |
 | `VITE_API_URL` قديم والواجهة بترمي أخطاء | حدّث المتغير في Vercel بـ جديد الرابط واعمل Redeploy |

@@ -9,17 +9,19 @@ services:
     healthCheckPath: /api/v1/settings
     autoDeploy: true
     envVars:
-      - key: SPRING_PROFILES_ACTIVE
-        value: postgres
-      - key: DB_URL
-        sync: false
-      - key: DB_USER
-        sync: false
-      - key: DB_PASSWORD
-        sync: false
+      - key: NODE_ENV
+        value: production
       - key: JWT_SECRET
         generateValue: true
       - key: ADMIN_INITIAL_PASSWORD
         sync: false
       - key: CORS_ORIGINS
+        sync: false
+      # Optional: set DB_URL to a PostgreSQL connection string (postgres:// or jdbc:postgresql://)
+      # to use PostgreSQL (e.g. Neon). Without it the app uses SQLite.
+      - key: DB_URL
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
         sync: false

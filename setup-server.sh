@@ -19,9 +19,10 @@ echo "=== 3) Generating secrets (.env) ==="
 if [ ! -f .env ]; then
   umask 077
   {
-    echo "DB_PASSWORD=$(openssl rand -hex 20)"
     echo "JWT_SECRET=$(openssl rand -hex 64)"
     echo "ADMIN_INITIAL_PASSWORD=$(openssl rand -base64 12 | tr -d '/+=' | head -c 16)"
+    # Optional - use PostgreSQL (e.g. Neon) instead of the built-in SQLite file:
+    # echo "DB_URL=postgres://user:pass@host:5432/db"
   } > .env
   echo ".env created"
 else
