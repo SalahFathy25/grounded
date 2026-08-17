@@ -28,14 +28,15 @@ const contentService = require('../src/services/contentService')
   console.log('BEFORE about.title.ar =', before.headings?.about?.title?.ar)
   console.log('BEFORE about.title2.ar =', before.headings?.about?.title2?.ar)
 
-  const merged = await contentService.update({
+const merged = await contentService.update({
     hero: { title2: { ar: 'على ذوقك' } },
-    headings: { about: { title: { ar: 'جودة تحس بيها' }, title2: { ar: 'وأسعار هتحبها' } } },
+    headings: { about: { title: { ar: 'جودة تحس بيها' }, title2: { ar: 'وأسعار هتحبها' } }, testimonials: { title: { ar: 'قالوا عنّا' } } },
   })
 
   console.log('AFTER  hero.title2.ar =', merged.hero?.title2?.ar)
   console.log('AFTER  about.title.ar =', merged.headings?.about?.title?.ar)
   console.log('AFTER  about.title2.ar =', merged.headings?.about?.title2?.ar)
+  console.log('AFTER  testi.title.ar =', merged.headings?.testimonials?.title?.ar)
   process.exit(0)
 })().catch(err => {
   console.error(err)

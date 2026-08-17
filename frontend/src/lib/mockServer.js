@@ -89,7 +89,7 @@ export const DEFAULT_CONTENT = {
     featured: { tag: { en: 'Picked for you', ar: 'اختير لك' }, title: { en: 'Featured products', ar: 'منتجات مميزة' } },
     spotlight: { tag: { en: 'Curated', ar: 'منسّق لك' }, title: { en: 'Pick your category', ar: 'اختار فئتك' } },
     about: { tag: { en: 'Brand story', ar: 'قصة البراند' }, title: { en: 'Quality you can feel,', ar: 'جودة تحس بيها' }, title2: { en: 'prices you will love.', ar: 'وأسعار هتحبها' } },
-    testimonials: { tag: { en: 'Testimonials', ar: 'آراء العملاء' }, title: { en: 'What the crew says', ar: 'اللي بيقوله الكريو' } },
+    testimonials: { tag: { en: 'Testimonials', ar: 'آراء العملاء' }, title: { en: 'What the crew says', ar: 'قالوا عنّا' } },
     faq: { tag: { en: 'FAQ', ar: 'أسئلة شائعة' }, title: { en: 'Questions? Answered.', ar: 'عندك سؤال؟ عندنا الجواب' } },
     sizeGuide: { tag: { en: 'Size guide', ar: 'دليل المقاسات' }, title: { en: 'Find your fit', ar: 'اعرف مقاسك' }, sub: { en: 'Measurements in centimeters. Take a shirt you love, measure it, and compare.', ar: 'القياسات بالسنتيمتر. خد قميص بتحبه، قيسه، وقارن.' } },
     stats: { tag: { en: 'By the numbers', ar: 'بالأرقام' }, title: { en: 'Trust, delivered', ar: 'ثقة مع كل طلب' } },
