@@ -19,6 +19,9 @@ export const translations = {
     'nav.menu': 'Open menu',
     'nav.closeMenu': 'Close menu',
     'nav.lang': 'العربية',
+    'nav.darkMode': 'Dark mode',
+    'nav.lightMode': 'Light mode',
+    'nav.theme': 'Switch theme',
 
     'footer.tagline': 'Premium streetwear at honest prices. T-shirts, shirts, pants and more — delivered across Egypt.',
     'footer.shop': 'Shop',
@@ -652,6 +655,9 @@ export const translations = {
     'nav.menu': 'افتح القائمة',
     'nav.closeMenu': 'أغلق القائمة',
     'nav.lang': 'EN',
+    'nav.darkMode': 'الوضع الداكن',
+    'nav.lightMode': 'الوضع الفاتح',
+    'nav.theme': 'بدّل الثيم',
 
     'footer.tagline': 'ملابس شبابية بجودة عالية وأسعار مناسبة. تيشيرتات وقمصان وبناطيل وأكثر — توصيل لجميع محافظات مصر.',
     'footer.shop': 'التسوق',

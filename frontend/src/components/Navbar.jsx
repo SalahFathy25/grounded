@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
-import { ChevronDown, Globe, Home, LogOut, Menu, Package, Phone, Search, ShoppingBag, User as UserIcon, X, LayoutDashboard } from 'lucide-react'
+import { ChevronDown, Globe, Home, LogOut, Menu, Moon, Package, Phone, Search, ShoppingBag, Sun, User as UserIcon, X, LayoutDashboard } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
 import { useLang } from '../context/LangContext'
 import { useSettings } from '../context/SettingsContext'
+import { useTheme } from '../context/ThemeContext'
 import { initials } from '../lib/format'
 
 function Logo() {
@@ -33,6 +34,24 @@ function LangToggle({ compact = false }) {
     >
       <Globe className="size-4 text-gold" aria-hidden="true" />
       {lang === 'ar' ? 'EN' : 'العربية'}
+    </button>
+  )
+}
+
+function ThemeToggle({ compact = false }) {
+  const { theme, toggle } = useTheme()
+  const { t } = useLang()
+  const isDark = theme === 'dark'
+  return (
+    <button
+      type="button"
+      onClick={toggle}
+      className={`flex cursor-pointer items-center gap-1.5 rounded-lg font-bold transition-colors hover:bg-ink/5 ${compact ? 'px-2 py-2 text-xs' : 'px-2.5 py-2 text-xs border border-line'}`}
+      aria-label={t(isDark ? 'nav.lightMode' : 'nav.darkMode')}
+      title={t(isDark ? 'nav.lightMode' : 'nav.darkMode')}
+    >
+      {isDark ? <Sun className="size-4 text-gold" aria-hidden="true" /> : <Moon className="size-4 text-gold" aria-hidden="true" />}
+      <span className="hidden sm:inline">{t(isDark ? 'nav.lightMode' : 'nav.darkMode')}</span>
     </button>
   )
 }
@@ -149,6 +168,7 @@ export default function Navbar() {
         <SearchBar className="ms-auto hidden w-64 md:block lg:w-80" />
 
         <div className="ms-auto flex items-center gap-1 md:ms-0">
+          <ThemeToggle compact />
           <LangToggle compact />
           <a
             href={telHref}
@@ -242,6 +262,7 @@ export default function Navbar() {
             <button type="button" onClick={toggleLang} className="flex min-h-11 cursor-pointer items-center gap-2.5 rounded-lg px-3 text-sm font-semibold hover:bg-ink/5">
               <Globe className="size-4 text-muted" aria-hidden="true" /> {lang === 'ar' ? 'English' : 'العربية'}
             </button>
+            <ThemeToggle />
             {!user && (
               <div className="mt-2 flex flex-col gap-2 border-t border-line pt-3">
                 <Link to="/login" onClick={() => setMenuOpen(false)} className="btn btn-outline">{t('nav.signIn')}</Link>
