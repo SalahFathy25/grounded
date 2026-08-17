@@ -76,8 +76,9 @@ export default function Home() {
           className="absolute inset-0 h-full w-full object-cover object-[center_30%]"
         />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-ink via-ink/85 to-ink/35" aria-hidden="true" />
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink via-transparent to-ink/65" aria-hidden="true" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink via-ink/30 to-ink/75 lg:via-transparent lg:to-ink/65" aria-hidden="true" />
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(50%_60%_at_85%_10%,rgba(251,191,36,0.13),transparent_65%)]" aria-hidden="true" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-3/4 bg-[radial-gradient(90%_60%_at_50%_100%,rgba(251,191,36,0.14),transparent_70%)] lg:hidden" aria-hidden="true" />
         <span
           className="pointer-events-none absolute end-8 top-1/2 hidden -translate-y-1/2 select-none font-display text-xs uppercase tracking-[0.45em] text-paper/35 lg:block [writing-mode:vertical-rl]"
           aria-hidden="true"
@@ -85,7 +86,7 @@ export default function Home() {
           Grounded <span className="text-gold-bright">·</span> est. 2026
         </span>
 
-        <div className="relative mx-auto max-w-7xl px-4 pb-24 pt-24 sm:pt-28 lg:pb-32 lg:pt-44">
+        <div className="relative mx-auto flex min-h-[88svh] w-full max-w-7xl flex-col justify-end px-5 pb-14 pt-24 sm:px-4 sm:pb-24 sm:pt-28 lg:block lg:min-h-0 lg:pb-32 lg:pt-44">
           <div className="max-w-2xl">
             <Reveal as="span" className="inline-block" delay={0}>
               <span className="inline-flex items-center gap-2 rounded-full border border-gold-bright/30 bg-gold-bright/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-gold-bright">
@@ -93,7 +94,7 @@ export default function Home() {
               </span>
             </Reveal>
             <Reveal delay={90}>
-              <h1 className="mt-7 font-display text-6xl uppercase leading-[0.95] tracking-tight sm:text-7xl lg:text-8xl xl:text-9xl">
+              <h1 className="mt-7 font-display text-[clamp(2.9rem,13vw,4rem)] uppercase leading-[0.95] tracking-tight sm:text-7xl lg:text-8xl xl:text-9xl">
                 {pick(hero.title1, lang)}
                 <br />
                 <span className="relative inline-block">
@@ -110,21 +111,30 @@ export default function Home() {
               </p>
             </Reveal>
             <Reveal delay={280}>
-              <div className="mt-10 flex flex-wrap gap-3">
-                <button type="button" onClick={() => navigate('/products')} className="btn btn-gold px-9 py-3.5 text-base shadow-[0_16px_40px_-14px_rgba(251,191,36,0.6)] hover:-translate-y-0.5">
+              <div className="mt-9 flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap">
+                <button type="button" onClick={() => navigate('/products')} className="btn btn-gold flex min-h-12 w-full items-center justify-center gap-2 px-9 py-3.5 text-base shadow-[0_16px_40px_-14px_rgba(251,191,36,0.6)] hover:-translate-y-0.5 sm:w-auto">
                   {pick(hero.cta, lang)} <ArrowRight className="size-4 rtl:rotate-180" aria-hidden="true" />
                 </button>
-                <a href="#categories" className="btn border border-white/25 bg-white/5 px-9 py-3.5 text-base text-paper backdrop-blur-sm hover:bg-white/15">
+                <a href="#categories" className="btn flex min-h-12 w-full items-center justify-center gap-2 border border-white/25 bg-white/5 px-9 py-3.5 text-base text-paper backdrop-blur-sm hover:bg-white/15 sm:w-auto">
                   {pick(hero.browse, lang)}
                 </a>
               </div>
             </Reveal>
+            {heroFloats.some(f => f.label) && (
+              <div className="mt-9 flex flex-wrap gap-2.5 lg:hidden" aria-hidden="true">
+                {heroFloats.slice(0, 3).map((f, i) => (
+                  <span key={i} className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-2 text-xs font-bold text-paper ring-1 ring-white/15 backdrop-blur-md">
+                    <f.icon className="size-4 text-gold-bright" /> {f.label}
+                  </span>
+                ))}
+              </div>
+            )}
             <Reveal delay={380}>
-              <div className="mt-12 flex flex-wrap items-center gap-x-6 gap-y-4">
-                <div className="flex items-center gap-4">
+              <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-4">
+                <div className="flex items-center gap-3 sm:gap-4">
                   <div className="flex -space-x-2" aria-hidden="true">
                     {testimonials.slice(0, 8).map((x, i) => (
-                      <img key={i} src={x.avatar} alt="" className="size-10 rounded-full border-2 border-ink object-cover" loading="lazy" />
+                      <img key={i} src={x.avatar} alt="" className="size-8 rounded-full border-2 border-ink object-cover sm:size-10" loading="lazy" />
                     ))}
                   </div>
                   <div className="text-sm">
@@ -137,6 +147,12 @@ export default function Home() {
               </div>
             </Reveal>
           </div>
+        </div>
+
+        <div className="pointer-events-none absolute inset-x-0 bottom-4 flex justify-center lg:hidden" aria-hidden="true">
+          <span className="grid size-10 animate-bounce place-items-center rounded-full border border-white/20 bg-white/5 text-paper/70 backdrop-blur-sm">
+            <ChevronDown className="size-5" />
+          </span>
         </div>
 
         {heroFloats.some(f => f.label) && (
