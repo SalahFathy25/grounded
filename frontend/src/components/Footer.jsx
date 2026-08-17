@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ArrowUpRight, Banknote, CreditCard, Facebook, Instagram, Mail, MapPin, Music2, Phone, ShoppingBag, Smartphone, Wallet } from 'lucide-react'
+import { ArrowUpRight, Banknote, CreditCard, Facebook, Instagram, Mail, MapPin, Music2, Phone, Smartphone, Wallet } from 'lucide-react'
 import { categoryApi } from '../lib/api'
 import { catName } from '../lib/format'
 import { useLang } from '../context/LangContext'
@@ -49,9 +49,7 @@ export default function Footer() {
           <Reveal dir="up">
             <div>
               <div className="flex items-center gap-2.5">
-                <span className="grid size-10 place-items-center rounded-xl bg-gradient-to-br from-gold/25 to-gold/5 text-gold-bright ring-1 ring-gold/30 transition-transform duration-300 group-hover:-rotate-6" aria-hidden="true">
-                  <ShoppingBag className="size-5" />
-                </span>
+                <img src="/logo.jpg" alt={storeName} className="h-10 w-auto max-w-[10rem] rounded-xl object-contain" loading="lazy" />
                 <span className="font-display text-2xl text-paper">{nameFirst}<span className="text-gold-bright">{nameRest.join(' ')}</span></span>
               </div>
               <p className="mt-4 max-w-xs text-sm leading-relaxed">{pick(footer.tagline, lang)}</p>

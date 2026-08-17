@@ -15,9 +15,7 @@ function Logo() {
   const [first, ...rest] = name.split(' ')
   return (
     <Link to="/" className="flex items-center gap-2" aria-label={t('brand')}>
-      <span className="grid size-9 place-items-center rounded-lg bg-ink" aria-hidden="true">
-        <ShoppingBag className="size-5 text-gold-bright" />
-      </span>
+      <img src="/logo.jpg" alt={t('brand')} className="h-9 w-auto max-w-[9rem] rounded-lg object-contain lg:h-10" />
       <span className="font-display text-xl uppercase tracking-tight">{first}<span className="text-gold">{rest.join(' ')}</span></span>
     </Link>
   )

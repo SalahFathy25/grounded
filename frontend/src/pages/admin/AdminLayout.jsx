@@ -1,5 +1,5 @@
 import { NavLink, Outlet, Link } from 'react-router-dom'
-import { ExternalLink, LayoutDashboard, LogOut, Package, Palette, Settings, ShoppingBag, ShoppingCart, Menu, X } from 'lucide-react'
+import { ExternalLink, LayoutDashboard, LogOut, Package, Palette, Settings, ShoppingCart, Menu, X } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useLang } from '../../context/LangContext'
@@ -26,9 +26,7 @@ export default function AdminLayout() {
   const sidebar = (
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-2 px-5 py-5">
-        <span className="grid size-9 place-items-center rounded-xl bg-paper/10" aria-hidden="true">
-          <ShoppingBag className="size-5 text-gold-bright" />
-        </span>
+        <img src="/logo.jpg" alt="Grounded" className="size-9 rounded-xl object-contain" />
         <span className="text-lg font-bold text-paper">
           Ground<span className="text-gold-bright">ed</span>
         </span>
