@@ -708,7 +708,7 @@ export const translations = {
 
     'home.heroBadge': 'موسم جديد · تشكيلات 2026',
     'home.heroTitle1': 'ملابس شبابية',
-    'home.heroTitle2': 'على ذوقك.',
+    'home.heroTitle2': 'على ذوقك',
     'home.heroSub': 'تيشيرتات وقمصان وبناطيل بجودة تلمسها — بأسعار منطقية.',
     'home.heroCta': 'تسوق الآن',
     'home.heroBrowse': 'تصفح الفئات',
@@ -752,8 +752,8 @@ export const translations = {
     'home.promoCta': 'تسوق الإصدار',
 
     'home.aboutTag': 'قصة البراند',
-    'home.aboutTitle': 'جودة تحس بيها،',
-    'home.aboutTitle2': 'وأسعار هتحبها.',
+    'home.aboutTitle': 'جودة تحس بيها',
+    'home.aboutTitle2': 'وأسعار هتحبها',
     'home.aboutText': 'غراوندد بدأت بفكرة بسيطة: ستريت وير مميز — تيشيرتات وقمصان وبناطيل — من غير هوامش ربح مبالغ فيها. أقمشة مختارة بعناية، وأسعار صريحة، وتوصيل لكل مصر خلال ٢٤ ساعة.',
     'home.aboutCta': 'اكتشف التشكيلة',
     'home.testiTag': 'آراء العملاء',

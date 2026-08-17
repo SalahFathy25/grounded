@@ -2,7 +2,7 @@
   "hero": {
     "badge": { "en": "New season · 2026 drops", "ar": "موسم جديد · تشكيلات 2026" },
     "title1": { "en": "Streetwear that", "ar": "ملابس شبابية" },
-    "title2": { "en": "fits your vibe.", "ar": "على ذوقك." },
+    "title2": { "en": "fits your vibe.", "ar": "على ذوقك" },
     "sub": { "en": "Premium tees, shirts and pants — quality you can feel, at prices that make sense.", "ar": "تيشيرتات وقمصان وبناطيل بجودة تلمسها — بأسعار منطقية." },
     "cta": { "en": "Shop now", "ar": "تسوق الآن" },
     "browse": { "en": "Browse categories", "ar": "تصفح الفئات" },
@@ -30,7 +30,7 @@
     "categories": { "tag": { "en": "Collections", "ar": "التشكيلات" }, "title": { "en": "Shop by category", "ar": "تسوق حسب الفئة" } },
     "featured": { "tag": { "en": "Picked for you", "ar": "اختير لك" }, "title": { "en": "Featured products", "ar": "منتجات مميزة" } },
     "spotlight": { "tag": { "en": "Curated", "ar": "منسّق لك" }, "title": { "en": "Pick your category", "ar": "اختار فئتك" } },
-    "about": { "tag": { "en": "Brand story", "ar": "قصة البراند" }, "title": { "en": "Quality you can feel,", "ar": "جودة تحس بيها،" }, "title2": { "en": "prices you will love.", "ar": "وأسعار هتحبها." } },
+    "about": { "tag": { "en": "Brand story", "ar": "قصة البراند" }, "title": { "en": "Quality you can feel,", "ar": "جودة تحس بيها" }, "title2": { "en": "prices you will love.", "ar": "وأسعار هتحبها" } },
     "testimonials": { "tag": { "en": "Testimonials", "ar": "آراء العملاء" }, "title": { "en": "What the crew says", "ar": "اللي بيقوله الكريو" } },
     "faq": { "tag": { "en": "FAQ", "ar": "أسئلة شائعة" }, "title": { "en": "Questions? Answered.", "ar": "عندك سؤال؟ عندنا الجواب" } },
     "sizeGuide": { "tag": { "en": "Size guide", "ar": "دليل المقاسات" }, "title": { "en": "Find your fit", "ar": "اعرف مقاسك" }, "sub": { "en": "Measurements in centimeters. Take a shirt you love, measure it, and compare.", "ar": "القياسات بالسنتيمتر. خد قميص بتحبه، قيسه، وقارن." } },
