@@ -148,7 +148,7 @@ export default function Footer() {
       </div>
 
       <div className="pointer-events-none relative select-none overflow-hidden" aria-hidden="true">
-        <p className="font-display -mb-4 text-center text-[16vw] leading-none text-paper/[0.04] sm:-mb-6 lg:text-[11rem]">
+        <p className="font-display pb-2 text-center text-[16vw] leading-none text-paper/[0.04] lg:text-[11rem]">
           {watermark}
         </p>
       </div>
