@@ -8,9 +8,6 @@ function readTheme() {
     const saved = localStorage.getItem(THEME_KEY)
     if (saved === 'dark' || saved === 'light') return saved
   } catch { /* ignore */ }
-  try {
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark'
-  } catch { /* ignore */ }
   return 'light'
 }
 
