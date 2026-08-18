@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { Facebook, Instagram, Mail, MessageSquareText, Megaphone, Music2, Phone, Save, ShoppingBag, Smartphone, Truck } from 'lucide-react'
-import { settingsApi } from '../../lib/api'
+import { Facebook, Instagram, Mail, MessageSquareText, Megaphone, Music2, Phone, Save, ShoppingBag, Smartphone, Trash2, Truck } from 'lucide-react'
+import { adminApi, settingsApi } from '../../lib/api'
 import { useSettings } from '../../context/SettingsContext'
 import { useLang } from '../../context/LangContext'
 import { useToast } from '../../context/ToastContext'
+import { useAuth } from '../../context/AuthContext'
 import { subscribeRealtime } from '../../lib/realtime'
 
 function Field({ id, label, hint, ...props }) {
@@ -34,7 +35,9 @@ export default function AdminSettings() {
   const { settings, setSettings } = useSettings()
   const { t } = useLang()
   const toast = useToast()
+  const { isSuperAdmin } = useAuth()
   const [busy, setBusy] = useState(false)
+  const [resetting, setResetting] = useState(false)
   const [draft, setDraft] = useState(settings)
   const dirtyRef = useRef(false)
 
@@ -82,6 +85,20 @@ export default function AdminSettings() {
       toast.push(err.message || t('admin.settings.saveError'), 'error')
     } finally {
       setBusy(false)
+    }
+  }
+
+  const reset = async () => {
+    if (!window.confirm(t('admin.settings.resetConfirm1'))) return
+    if (!window.confirm(t('admin.settings.resetConfirm2'))) return
+    setResetting(true)
+    try {
+      await adminApi.reset()
+      toast.push(t('admin.settings.resetDone'), 'success')
+    } catch (err) {
+      toast.push(err.message || t('admin.settings.resetError'), 'error')
+    } finally {
+      setResetting(false)
     }
   }
 
@@ -161,6 +178,22 @@ export default function AdminSettings() {
           {busy ? t('admin.settings.saving') : t('admin.settings.save')}
         </button>
       </div>
+
+      {isSuperAdmin && (
+        <section className="card border-red-300">
+          <div className="mb-4 flex items-center gap-2.5 border-b border-line pb-4">
+            <span className="grid size-9 place-items-center rounded-lg bg-red-100 text-red-600" aria-hidden="true">
+              <Trash2 className="size-4" />
+            </span>
+            <h2 className="text-lg font-bold text-red-700">{t('admin.settings.resetTitle')}</h2>
+          </div>
+          <p className="mb-4 text-sm text-muted">{t('admin.settings.resetHint')}</p>
+          <button type="button" onClick={reset} disabled={resetting} className="btn btn-danger btn-sm">
+            <Trash2 className="size-4" aria-hidden="true" />
+            {resetting ? '…' : t('admin.settings.resetButton')}
+          </button>
+        </section>
+      )}
     </div>
   )
 }

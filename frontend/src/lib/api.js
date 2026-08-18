@@ -74,6 +74,7 @@ export const orderApi = {
 
 export const adminApi = {
   stats: () => api('get', '/admin/stats'),
+  reset: () => api('post', '/admin/reset'),
 }
 
 export const userApi = {

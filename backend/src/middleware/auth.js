@@ -43,7 +43,7 @@ function requiresAdmin(method, path) {
 }
 
 function requiresSuperAdmin(method, path) {
-  return path.startsWith('/api/v1/admin/users') || path.startsWith('/api/v1/admin/logs')
+  return path.startsWith('/api/v1/admin/users') || path.startsWith('/api/v1/admin/logs') || path.startsWith('/api/v1/admin/reset')
 }
 
 const ADMIN_ROLES = ['ROLE_ADMIN', 'ROLE_SUPER_ADMIN']

@@ -1,6 +1,7 @@
 'use strict'
 
 const express = require('express')
+const db = require('../db')
 const settingsService = require('../services/settingsService')
 const contentService = require('../services/contentService')
 const statsService = require('../services/statsService')
@@ -8,7 +9,7 @@ const productService = require('../services/productService')
 const orderService = require('../services/orderService')
 const userService = require('../services/userService')
 const auditService = require('../services/auditService')
-const { addClient, corsHeadersFor } = require('../realtime')
+const { addClient, emit, corsHeadersFor } = require('../realtime')
 const { wrap } = require('../utils')
 
 const router = express.Router()
@@ -89,6 +90,23 @@ router.get('/logs', wrap(async (req, res) => {
 
 router.delete('/logs', wrap(async (req, res) => {
   res.json(await auditService.clear())
+}))
+
+/** Super-admin only: wipe store data (products/categories/orders) and restore
+ *  site content to its defaults. Users and settings are kept. */
+router.post('/reset', wrap(async (req, res) => {
+  await db.txn(async t => {
+    await t.run('DELETE FROM order_items')
+    await t.run('DELETE FROM orders')
+    await t.run('DELETE FROM products')
+    await t.run('DELETE FROM categories')
+  })
+  await contentService.reset()
+  auditService.log('reset', 'store', null, { scope: 'categories, products, orders, content' })
+  emit('products')
+  emit('categories')
+  emit('content')
+  res.json({ ok: true })
 }))
 
 module.exports = router
