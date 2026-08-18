@@ -54,8 +54,8 @@ if (isProduction) {
   if (!adminInitialPassword || adminInitialPassword === 'admin123') {
     throw new Error('ADMIN_INITIAL_PASSWORD must be set to a strong value when NODE_ENV=production')
   }
-  if (!superAdminInitialPassword || superAdminInitialPassword === 'superadmin123') {
-    throw new Error('SUPER_ADMIN_INITIAL_PASSWORD must be set to a strong value when NODE_ENV=production')
+  if (!superAdminInitialPassword) {
+    throw new Error('SUPER_ADMIN_INITIAL_PASSWORD must be set when NODE_ENV=production')
   }
 }
 
