@@ -260,7 +260,6 @@ const schema = [
   'CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id)',
   'CREATE INDEX IF NOT EXISTS idx_products_category_id ON products(category_id)',
   'CREATE INDEX IF NOT EXISTS idx_products_active_stock ON products(is_active, stock_quantity)',
-  'CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_user_idem ON orders(user_id, idempotency_key)',
   'CREATE INDEX IF NOT EXISTS idx_audit_created_at ON audit_logs(created_at)',
   'CREATE INDEX IF NOT EXISTS idx_audit_resource ON audit_logs(resource, action)',
 ]
