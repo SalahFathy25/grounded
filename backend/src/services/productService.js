@@ -141,9 +141,10 @@ async function list(options = {}) {
      FROM products p WHERE p.is_active = ${db.boolLit(true)}`,
   )
   const brandRows = await db.q(
-    `SELECT DISTINCT p.brand AS brand FROM products p
-     WHERE p.is_active = ${db.boolLit(true)} AND p.brand IS NOT NULL AND TRIM(p.brand) <> ''
-     ORDER BY LOWER(p.brand)`,
+    `SELECT brand FROM (
+       SELECT DISTINCT p.brand AS brand FROM products p
+       WHERE p.is_active = ${db.boolLit(true)} AND p.brand IS NOT NULL AND TRIM(p.brand) <> ''
+     ) t ORDER BY LOWER(brand)`,
   )
 
   return {
