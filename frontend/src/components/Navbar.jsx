@@ -28,7 +28,7 @@ function LangToggle({ compact = false }) {
       type="button"
       onClick={toggle}
       className={`flex cursor-pointer items-center gap-1.5 rounded-lg font-bold transition-colors hover:bg-ink/5 ${compact ? 'px-2 py-2 text-xs' : 'px-2.5 py-2 text-xs border border-line'}`}
-      aria-label="Switch language"
+      aria-label={t('nav.switchLang')}
     >
       <Globe className="size-4 text-gold" aria-hidden="true" />
       {lang === 'ar' ? 'EN' : 'العربية'}
@@ -44,12 +44,12 @@ function ThemeToggle({ compact = false }) {
     <button
       type="button"
       onClick={toggle}
-      className={`flex cursor-pointer items-center gap-1.5 rounded-lg font-bold transition-colors hover:bg-ink/5 ${compact ? 'px-2 py-2 text-xs' : 'px-2.5 py-2 text-xs border border-line'}`}
+      className={`flex cursor-pointer items-center gap-1.5 rounded-lg border border-line bg-paper/60 font-bold text-ink transition-colors hover:bg-ink/5 ${compact ? 'px-2 py-2 text-xs' : 'px-2.5 py-2 text-xs'}`}
       aria-label={t(isDark ? 'nav.lightMode' : 'nav.darkMode')}
       title={t(isDark ? 'nav.lightMode' : 'nav.darkMode')}
     >
       {isDark ? <Sun className="size-4 text-gold" aria-hidden="true" /> : <Moon className="size-4 text-gold" aria-hidden="true" />}
-      <span className="hidden sm:inline">{t(isDark ? 'nav.lightMode' : 'nav.darkMode')}</span>
+      <span>{t(isDark ? 'nav.lightMode' : 'nav.darkMode')}</span>
     </button>
   )
 }
@@ -155,7 +155,7 @@ export default function Navbar() {
 
         <Logo />
 
-        <nav className="hidden items-center gap-1 lg:flex" aria-label="Main navigation">
+        <nav className="hidden items-center gap-1 lg:flex" aria-label={t('nav.mainNav')}>
           <NavLink to="/" className={navLink} end>{t('nav.home')}</NavLink>
           <NavLink to="/products" className={navLink}>{t('nav.shop')}</NavLink>
           <a href="#about" onClick={e => handleSection(e, 'about')} className="whitespace-nowrap rounded-lg px-2 py-2 text-sm font-semibold text-ink-soft transition-colors hover:bg-ink/5 hover:text-ink">{t('nav.about')}</a>
@@ -237,8 +237,8 @@ export default function Navbar() {
 
       {menuOpen && (
         <div className="border-t border-line bg-paper px-4 py-4 lg:hidden animate-fade-in">
-          <SearchBar className="mb-3" autoFocus onSubmit={() => setMenuOpen(false)} />
-          <nav className="flex flex-col" aria-label="Mobile navigation">
+          <SearchBar className="mb-3" onSubmit={() => setMenuOpen(false)} />
+          <nav className="flex flex-col" aria-label={t('nav.mobileNav')}>
             <Link to="/" onClick={() => setMenuOpen(false)} className="flex min-h-11 items-center gap-2.5 rounded-lg px-3 text-sm font-semibold hover:bg-ink/5">
               <Home className="size-4 text-muted" aria-hidden="true" /> {t('nav.home')}
             </Link>

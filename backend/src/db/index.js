@@ -111,10 +111,13 @@ async function run(sql, params = []) {
     const text = sql.includes(' RETURNING ') ? sql : `${sql} RETURNING id`
     const { rows } = await pool.query(toPgPlaceholders(text), params)
     const row = rows[0] || {}
-    return { lastId: row.id === undefined || row.id === null ? null : Number(row.id) }
+    return {
+      lastId: row.id === undefined || row.id === null ? null : Number(row.id),
+      changes: rows.length,
+    }
   }
   const info = sqlite.prepare(sql).run(params)
-  return { lastId: Number(info.lastInsertRowid) }
+  return { lastId: Number(info.lastInsertRowid), changes: Number(info.changes) }
 }
 
 async function txn(fn) {
@@ -135,7 +138,10 @@ async function txn(fn) {
           const text = sql.includes(' RETURNING ') ? sql : `${sql} RETURNING id`
           const { rows } = await client.query(toPgPlaceholders(text), params)
           const row = rows[0] || {}
-          return { lastId: row.id === undefined || row.id === null ? null : Number(row.id) }
+          return {
+            lastId: row.id === undefined || row.id === null ? null : Number(row.id),
+            changes: rows.length,
+          }
         },
       })
       await client.query('COMMIT')
@@ -154,7 +160,7 @@ async function txn(fn) {
       get: (sql, params = []) => normalizeRow(sqlite.prepare(sql).get(params)),
       run: (sql, params = []) => {
         const info = sqlite.prepare(sql).run(params)
-        return { lastId: Number(info.lastInsertRowid) }
+        return { lastId: Number(info.lastInsertRowid), changes: Number(info.changes) }
       },
     })
     sqlite.exec('COMMIT')
@@ -175,6 +181,19 @@ async function execSql(statements) {
   sqlite.exec(statements.join(';\n'))
 }
 
+async function ensureIdempotencyColumn() {
+  if (dialect === 'pg') {
+    await pool.query('ALTER TABLE orders ADD COLUMN IF NOT EXISTS idempotency_key VARCHAR(100)')
+    await pool.query('CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_user_idem ON orders(user_id, idempotency_key)')
+    return
+  }
+  const cols = sqlite.prepare('PRAGMA table_info(orders)').all()
+  if (!cols.some(c => c.name === 'idempotency_key')) {
+    sqlite.exec('ALTER TABLE orders ADD COLUMN idempotency_key TEXT')
+  }
+  sqlite.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_user_idem ON orders(user_id, idempotency_key)')
+}
+
 async function init() {
   if (dialect === 'pg') {
     loadPg()
@@ -183,6 +202,7 @@ async function init() {
   }
   const { schema } = require('./schema')
   await execSql(schema)
+  await ensureIdempotencyColumn()
   const { seed } = require('./seed')
   await seed()
 }

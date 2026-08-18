@@ -6,10 +6,11 @@ import { salePrice } from '../lib/format'
 
 const CartContext = createContext(null)
 const CART_KEY = 'grounded_cart'
+const keyFor = userId => (userId ? `${CART_KEY}_${userId}` : CART_KEY)
 
-function readCart() {
+function readCart(key) {
   try {
-    const items = JSON.parse(localStorage.getItem(CART_KEY))
+    const items = JSON.parse(localStorage.getItem(key))
     return Array.isArray(items) ? items : []
   } catch {
     return []
@@ -18,24 +19,23 @@ function readCart() {
 
 export function CartProvider({ children }) {
   const { user } = useAuth()
-  const [items, setItems] = useState(readCart)
+  const [items, setItems] = useState(() => readCart(CART_KEY))
   const [open, setOpen] = useState(false)
   const toast = useToast()
   const { t } = useLang()
-  const wasLoggedIn = useRef(false)
+  const keyRef = useRef(CART_KEY)
+
+  const userKey = user ? keyFor(user.id) : CART_KEY
 
   useEffect(() => {
-    if (user) {
-      wasLoggedIn.current = true
-    } else if (wasLoggedIn.current) {
-      // Logged out — drop the cart so it doesn't leak into the next session.
-      setItems([])
-      wasLoggedIn.current = false
-    }
-  }, [user])
+    if (keyRef.current === userKey) return
+    try { localStorage.setItem(keyRef.current, JSON.stringify(items)) } catch { /* ignore */ }
+    keyRef.current = userKey
+    setItems(readCart(userKey))
+  }, [userKey])
 
   useEffect(() => {
-    localStorage.setItem(CART_KEY, JSON.stringify(items))
+    try { localStorage.setItem(keyRef.current, JSON.stringify(items)) } catch { /* ignore */ }
   }, [items])
 
   const close = () => setOpen(false)

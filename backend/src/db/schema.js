@@ -113,6 +113,7 @@ function ordersTable() {
       payment_proof TEXT,
       payment_proof_at TIMESTAMP,
       status_history TEXT,
+      idempotency_key VARCHAR(100),
       CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users(id)
     )`
   }
@@ -130,6 +131,7 @@ function ordersTable() {
     payment_proof TEXT,
     payment_proof_at TEXT,
     status_history TEXT,
+    idempotency_key TEXT,
     FOREIGN KEY (user_id) REFERENCES users(id)
   )`
 }
@@ -217,6 +219,33 @@ function contentTable() {
   )`
 }
 
+function auditLogsTable() {
+  if (dialect === 'pg') {
+    return `CREATE TABLE IF NOT EXISTS audit_logs (
+      id BIGSERIAL PRIMARY KEY,
+      actor_id BIGINT,
+      actor_email VARCHAR(150),
+      actor_role VARCHAR(20),
+      action VARCHAR(40) NOT NULL,
+      resource VARCHAR(40) NOT NULL,
+      resource_id BIGINT,
+      details TEXT,
+      created_at TIMESTAMP NOT NULL
+    )`
+  }
+  return `CREATE TABLE IF NOT EXISTS audit_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    actor_id INTEGER,
+    actor_email TEXT,
+    actor_role TEXT,
+    action TEXT NOT NULL,
+    resource TEXT NOT NULL,
+    resource_id INTEGER,
+    details TEXT,
+    created_at TEXT NOT NULL
+  )`
+}
+
 const schema = [
   usersTable(),
   categoriesTable(),
@@ -225,6 +254,15 @@ const schema = [
   orderItemsTable(),
   settingsTable(),
   contentTable(),
+  auditLogsTable(),
+  'CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id)',
+  'CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status)',
+  'CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id)',
+  'CREATE INDEX IF NOT EXISTS idx_products_category_id ON products(category_id)',
+  'CREATE INDEX IF NOT EXISTS idx_products_active_stock ON products(is_active, stock_quantity)',
+  'CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_user_idem ON orders(user_id, idempotency_key)',
+  'CREATE INDEX IF NOT EXISTS idx_audit_created_at ON audit_logs(created_at)',
+  'CREATE INDEX IF NOT EXISTS idx_audit_resource ON audit_logs(resource, action)',
 ]
 
 module.exports = { schema }

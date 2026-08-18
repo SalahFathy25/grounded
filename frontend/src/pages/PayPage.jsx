@@ -254,6 +254,7 @@ export default function PayPage() {
   if (order.payment_method === 'COD') return <Navigate to={`/order-success/${order.id}`} replace />
 
   const isWallet = order.payment_method === 'VODAFONE_CASH' || order.payment_method === 'INSTAPAY'
+  const payAmount = Math.round((order.total_amount + (Number(order.shipping_fee) || 0)) * 100) / 100
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
@@ -287,15 +288,15 @@ export default function PayPage() {
               {isWallet ? t('pay.wallet.title') : t('pay.card.paymentTitle')}
             </h2>
             {isWallet ? (
-              <p className="mt-4 text-sm text-muted">{t('pay.wallet.how', { amount: formatPrice(order.total_amount) })}</p>
+              <p className="mt-4 text-sm text-muted">{t('pay.wallet.how', { amount: formatPrice(payAmount) })}</p>
             ) : (
               <p className="mt-4 text-sm text-muted">{t('pay.card.secure')}</p>
             )}
             <div className="mt-5">
               {isWallet ? (
-                <WalletForm order={order} amount={order.total_amount} settings={settings} method={order.payment_method} t={t} onDone={() => setDone(true)} />
+                <WalletForm order={order} amount={payAmount} settings={settings} method={order.payment_method} t={t} onDone={() => setDone(true)} />
               ) : (
-                <CardForm order={order} amount={order.total_amount} t={t} onDone={() => setDone(true)} />
+                <CardForm order={order} amount={payAmount} t={t} onDone={() => setDone(true)} />
               )}
             </div>
           </section>

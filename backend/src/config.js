@@ -41,12 +41,37 @@ function toPgUrl(value) {
   return url
 }
 
+const isProduction = process.env.NODE_ENV === 'production'
+
+const jwtSecret = env('JWT_SECRET', '')
+const adminInitialPassword = env('ADMIN_INITIAL_PASSWORD', '')
+const superAdminInitialPassword = env('SUPER_ADMIN_INITIAL_PASSWORD', '')
+
+if (isProduction) {
+  if (!jwtSecret) {
+    throw new Error('JWT_SECRET must be set when NODE_ENV=production (refusing to run with a default secret)')
+  }
+  if (!adminInitialPassword || adminInitialPassword === 'admin123') {
+    throw new Error('ADMIN_INITIAL_PASSWORD must be set to a strong value when NODE_ENV=production')
+  }
+  if (!superAdminInitialPassword || superAdminInitialPassword === 'superadmin123') {
+    throw new Error('SUPER_ADMIN_INITIAL_PASSWORD must be set to a strong value when NODE_ENV=production')
+  }
+}
+
+// jsonwebtoken treats numeric expiresIn as SECONDS — keep the env var in
+// milliseconds (JWT_EXPIRATION_MS) but convert explicitly so the unit is
+// never ambiguous. Default 86400000 ms = 24 hours.
+const jwtExpirationMs = Math.max(60000, Number(env('JWT_EXPIRATION_MS', '86400000')) || 86400000)
+
 module.exports = {
   port: Number(env('PORT', process.env.PORT || '8080')),
-  jwtSecret: env('JWT_SECRET', 'shopverse-dev-secret-change-me-in-production-0123456789'),
-  jwtExpirationMs: Number(env('JWT_EXPIRATION_MS', '86400000')),
+  jwtSecret: jwtSecret || 'shopverse-dev-secret-change-me-in-production-0123456789',
+  jwtExpirationMs,
+  jwtExpirationSeconds: Math.floor(jwtExpirationMs / 1000),
   corsOrigins: env('CORS_ORIGINS', 'http://localhost:5173').split(',').map(s => s.trim()).filter(Boolean),
-  adminInitialPassword: env('ADMIN_INITIAL_PASSWORD', 'admin123'),
+  adminInitialPassword: adminInitialPassword || 'admin123',
+  superAdminInitialPassword: superAdminInitialPassword || 'superadmin123',
   dbUrl: toPgUrl(env('DB_URL', process.env.DATABASE_URL || '')),
   dbUser: env('DB_USER', ''),
   dbPassword: env('DB_PASSWORD', ''),

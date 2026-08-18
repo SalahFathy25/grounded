@@ -1,6 +1,9 @@
 'use strict'
 
 const db = require('../db')
+const { badRequest } = require('../errors')
+const { emit } = require('../realtime')
+const audit = require('./auditService')
 
 const SETTINGS_ID = 1
 
@@ -105,7 +108,8 @@ async function update(patch) {
       next.announcement_enabled = value === true || value === 'true' || value === 1
     } else if (key === 'shipping_fee') {
       const n = Number(value)
-      next.shipping_fee = Number.isNaN(n) ? 0 : n
+      if (Number.isNaN(n) || n < 0) throw badRequest('shipping_fee: must be a non-negative number')
+      next.shipping_fee = n
     } else if (value !== null && value !== undefined) {
       next[key] = String(value)
     }
@@ -122,6 +126,8 @@ async function update(patch) {
     next.instagram_url, next.facebook_url, next.tiktok_url,
     next.updated_at,
   ])
+  emit('settings')
+  audit.log('update', 'settings', SETTINGS_ID, { keys: Object.keys(patch || {}).filter(k => k in KEYS) })
   return get()
 }
 

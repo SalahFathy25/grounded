@@ -1,8 +1,10 @@
 'use strict'
 
 const db = require('../db')
-const { notFound } = require('../errors')
+const { badRequest, notFound } = require('../errors')
 const { round2 } = require('../utils')
+const { emit } = require('../realtime')
+const audit = require('./auditService')
 
 const PRODUCT_COLS = `
   p.id, p.name, p.description, p.price, p.stock_quantity, p.category_id, p.image_url,
@@ -12,6 +14,9 @@ const PRODUCT_COLS = `
 
 const PRODUCT_FROM = `
   FROM products p LEFT JOIN categories c ON p.category_id = c.id`
+
+const EFF_PRICE = `CASE WHEN p.discount_percent > 0 AND p.discount_percent < 99
+  THEN ROUND(p.price * (1 - p.discount_percent / 100.0), 2) ELSE p.price END`
 
 function readList(json) {
   if (!json || !json.trim()) return []
@@ -56,7 +61,7 @@ function toDto(product) {
     featured: Boolean(product.featured),
     rating: Number(product.rating) || 0,
     reviews_count: Number(product.reviews_count) || 0,
-    images: readList(product.images_json),
+    images: readList(product.images_json).filter(img => img !== product.image_url),
     created_at: product.created_at,
   }
 }
@@ -65,7 +70,7 @@ async function findById(id) {
   return db.get(`SELECT ${PRODUCT_COLS} ${PRODUCT_FROM} WHERE p.id = ?`, [id])
 }
 
-function buildSearchSql({ activeOnly, categoryId, pattern, minPrice, maxPrice }) {
+function buildSearchSql({ activeOnly, categoryId, pattern, minPrice, maxPrice, inStock, onSale, minRating, brands }) {
   const args = []
   let sql = `SELECT ${PRODUCT_COLS} ${PRODUCT_FROM} WHERE 1=1`
   if (activeOnly) sql += ` AND p.is_active = ${db.boolLit(true)}`
@@ -74,12 +79,22 @@ function buildSearchSql({ activeOnly, categoryId, pattern, minPrice, maxPrice })
     args.push(categoryId)
   }
   if (minPrice !== null && minPrice !== undefined) {
-    sql += ' AND p.price >= ?'
+    sql += ` AND ${EFF_PRICE} >= ?`
     args.push(minPrice)
   }
   if (maxPrice !== null && maxPrice !== undefined) {
-    sql += ' AND p.price <= ?'
+    sql += ` AND ${EFF_PRICE} <= ?`
     args.push(maxPrice)
+  }
+  if (inStock) sql += ' AND p.stock_quantity > 0'
+  if (onSale) sql += ' AND p.discount_percent > 0'
+  if (minRating !== null && minRating !== undefined) {
+    sql += ' AND p.rating >= ?'
+    args.push(minRating)
+  }
+  if (Array.isArray(brands) && brands.length > 0) {
+    sql += ` AND LOWER(p.brand) IN (${brands.map(() => '?').join(', ')})`
+    for (const brand of brands) args.push(String(brand).toLowerCase())
   }
   if (pattern) {
     sql += ` AND (LOWER(p.name) LIKE ? OR LOWER(p.description) LIKE ? OR LOWER(p.tags) LIKE ?
@@ -89,12 +104,26 @@ function buildSearchSql({ activeOnly, categoryId, pattern, minPrice, maxPrice })
   return { sql, args }
 }
 
-async function list(activeOnly, categoryId, keyword, sort, page, size, minPrice, maxPrice) {
-  const orderBy = sort === 'price_asc' ? 'p.price ASC' : sort === 'price_desc' ? 'p.price DESC' : 'p.created_at DESC'
+async function list(options = {}) {
+  const {
+    activeOnly = true,
+    categoryId,
+    keyword,
+    sort,
+    page = 0,
+    size = 12,
+    minPrice,
+    maxPrice,
+    inStock = false,
+    onSale = false,
+    minRating,
+    brands,
+  } = options
+  const orderBy = sort === 'price_asc' ? `${EFF_PRICE} ASC` : sort === 'price_desc' ? `${EFF_PRICE} DESC` : 'p.created_at DESC'
   const pattern = keyword === null || keyword === undefined || String(keyword).trim() === ''
     ? null
     : `%${String(keyword).trim().toLowerCase()}%`
-  const base = buildSearchSql({ activeOnly, categoryId, pattern, minPrice, maxPrice })
+  const base = buildSearchSql({ activeOnly, categoryId, pattern, minPrice, maxPrice, inStock, onSale, minRating, brands })
 
   const rows = await db.q(
     `${base.sql} ORDER BY ${orderBy} LIMIT ? OFFSET ?`,
@@ -106,12 +135,28 @@ async function list(activeOnly, categoryId, keyword, sort, page, size, minPrice,
   )
   const total = Number(countRow.cnt)
   const totalPages = size <= 0 ? 0 : Math.ceil(total / size)
+
+  const priceRow = await db.get(
+    `SELECT MIN(${EFF_PRICE}) AS min_price, MAX(${EFF_PRICE}) AS max_price
+     FROM products p WHERE p.is_active = ${db.boolLit(true)}`,
+  )
+  const brandRows = await db.q(
+    `SELECT DISTINCT p.brand AS brand FROM products p
+     WHERE p.is_active = ${db.boolLit(true)} AND p.brand IS NOT NULL AND TRIM(p.brand) <> ''
+     ORDER BY LOWER(p.brand)`,
+  )
+
   return {
     content: rows.map(toDto),
     totalElements: total,
     totalPages,
     page,
     size,
+    facets: {
+      brands: brandRows.map(r => r.brand),
+      min_price: Number(priceRow && priceRow.min_price) || 0,
+      max_price: Number(priceRow && priceRow.max_price) || 0,
+    },
   }
 }
 
@@ -131,6 +176,8 @@ async function create(request) {
     product.sku = `GR-${String(lastId).padStart(3, '0')}`
     await updateRow(product)
   }
+  emit('products')
+  audit.log('create', 'product', lastId, { name: product.name, sku: product.sku, price: product.price })
   return toDto(await findById(lastId))
 }
 
@@ -139,6 +186,8 @@ async function update(id, request) {
   if (!product) throw notFound('Product not found')
   await apply(product, request || {})
   await updateRow(product)
+  emit('products')
+  audit.log('update', 'product', id, { name: product.name, price: product.price, stock: product.stock_quantity })
   return toDto(await findById(id))
 }
 
@@ -147,14 +196,40 @@ async function softDelete(id) {
   if (!product) throw notFound('Product not found')
   product.is_active = !product.is_active
   await updateRow(product)
+  emit('products')
+  audit.log(product.is_active ? 'restore' : 'hide', 'product', id, { name: product.name })
   return toDto(await findById(id))
 }
 
+async function hardDelete(ids) {
+  const list = Array.isArray(ids) ? ids.map(Number).filter(Number.isInteger) : []
+  if (list.length === 0) throw badRequest('ids: must be a non-empty array of product ids')
+  await db.txn(async tx => {
+    const placeholders = list.map(() => '?').join(', ')
+    await tx.run(`DELETE FROM order_items WHERE product_id IN (${placeholders})`, list)
+    await tx.run(`DELETE FROM products WHERE id IN (${placeholders})`, list)
+  })
+  emit('products')
+  audit.log('delete', 'product', null, { ids: list })
+  return { deleted: list.length }
+}
+
 async function apply(product, request) {
-  if (request.name !== null && request.name !== undefined) product.name = String(request.name)
+  if (request.name !== null && request.name !== undefined) {
+    if (String(request.name).trim() === '') throw badRequest('name: must not be blank')
+    product.name = String(request.name).trim()
+  }
   if (request.description !== null && request.description !== undefined) product.description = String(request.description)
-  if (request.price !== null && request.price !== undefined) product.price = Number(request.price)
-  if (request.stock_quantity !== null && request.stock_quantity !== undefined) product.stock_quantity = Number(request.stock_quantity)
+  if (request.price !== null && request.price !== undefined) {
+    const price = Number(request.price)
+    if (!Number.isFinite(price) || price < 0) throw badRequest('price: must be a non-negative number')
+    product.price = round2(price)
+  }
+  if (request.stock_quantity !== null && request.stock_quantity !== undefined) {
+    const stock = Number(request.stock_quantity)
+    if (!Number.isInteger(stock) || stock < 0) throw badRequest('stock_quantity: must be a non-negative integer')
+    product.stock_quantity = stock
+  }
   if (request.is_active !== null && request.is_active !== undefined) product.is_active = request.is_active === true || request.is_active === 'true' || request.is_active === 1
   if (request.discount_percent !== null && request.discount_percent !== undefined) {
     const disc = Number(request.discount_percent)
@@ -166,8 +241,16 @@ async function apply(product, request) {
   if (request.color !== null && request.color !== undefined) product.color = String(request.color)
   if (request.sizes !== null && request.sizes !== undefined) product.sizes = String(request.sizes)
   if (request.tags !== null && request.tags !== undefined) product.tags = String(request.tags)
-  if (request.cost_price !== null && request.cost_price !== undefined) product.cost_price = Number(request.cost_price)
-  if (request.reorder_level !== null && request.reorder_level !== undefined) product.reorder_level = Number(request.reorder_level)
+  if (request.cost_price !== null && request.cost_price !== undefined) {
+    const cost = Number(request.cost_price)
+    if (!Number.isFinite(cost) || cost < 0) throw badRequest('cost_price: must be a non-negative number')
+    product.cost_price = round2(cost)
+  }
+  if (request.reorder_level !== null && request.reorder_level !== undefined) {
+    const level = Number(request.reorder_level)
+    if (!Number.isInteger(level) || level < 0) throw badRequest('reorder_level: must be a non-negative integer')
+    product.reorder_level = level
+  }
   if (product.reorder_level === undefined) product.reorder_level = 5
   if (request.featured !== null && request.featured !== undefined) product.featured = request.featured === true || request.featured === 'true' || request.featured === 1
   if (request.category_id !== null && request.category_id !== undefined) {
@@ -197,6 +280,9 @@ async function apply(product, request) {
   if (product.reviews_count === undefined) product.reviews_count = 0
   if (product.discount_percent === undefined) product.discount_percent = 0
   if (product.images_json === undefined) product.images_json = '[]'
+  if (product.name === null || product.name === undefined || String(product.name).trim() === '') {
+    throw badRequest('name: must not be blank')
+  }
 }
 
 async function insert(product) {
@@ -259,4 +345,4 @@ async function findLowStock(threshold, limit) {
   )
 }
 
-module.exports = { list, get, create, update, softDelete, toDto, findById, findLowStock, effectivePrice }
+module.exports = { list, get, create, update, softDelete, hardDelete, toDto, findById, findLowStock, effectivePrice }

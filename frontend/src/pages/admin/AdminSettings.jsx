@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Facebook, Instagram, Mail, MessageSquareText, Megaphone, Music2, Phone, Save, ShoppingBag, Smartphone, Truck } from 'lucide-react'
 import { settingsApi } from '../../lib/api'
 import { useSettings } from '../../context/SettingsContext'
 import { useLang } from '../../context/LangContext'
 import { useToast } from '../../context/ToastContext'
+import { subscribeRealtime } from '../../lib/realtime'
 
 function Field({ id, label, hint, ...props }) {
   return (
@@ -34,33 +35,51 @@ export default function AdminSettings() {
   const { t } = useLang()
   const toast = useToast()
   const [busy, setBusy] = useState(false)
+  const [draft, setDraft] = useState(settings)
+  const dirtyRef = useRef(false)
 
-  const set = key => e => setSettings({ ...settings, [key]: e.target.value })
+  useEffect(() => {
+    setDraft(settings)
+  }, [settings])
+
+  useEffect(() => {
+    const unsub = subscribeRealtime(() => {
+      if (dirtyRef.current) return
+      settingsApi.get().then(setSettings).catch(() => {})
+    })
+    return unsub
+  }, [])
+
+  const set = key => e => {
+    dirtyRef.current = true
+    setDraft({ ...draft, [key]: e.target.value })
+  }
 
   const save = async () => {
     setBusy(true)
     try {
       const updated = await settingsApi.update({
-        store_name_en: settings.store_name_en,
-        store_name_ar: settings.store_name_ar,
-        tagline_en: settings.tagline_en,
-        tagline_ar: settings.tagline_ar,
-        announcement_en: settings.announcement_en,
-        announcement_ar: settings.announcement_ar,
-        announcement_enabled: settings.announcement_enabled,
-        shipping_fee: Number(settings.shipping_fee) || 0,
-        vodafone_number: settings.vodafone_number,
-        instapay_number: settings.instapay_number,
-        support_phone: settings.support_phone,
-        support_email: settings.support_email,
-        instagram_url: settings.instagram_url,
-        facebook_url: settings.facebook_url,
-        tiktok_url: settings.tiktok_url,
+        store_name_en: draft.store_name_en,
+        store_name_ar: draft.store_name_ar,
+        tagline_en: draft.tagline_en,
+        tagline_ar: draft.tagline_ar,
+        announcement_en: draft.announcement_en,
+        announcement_ar: draft.announcement_ar,
+        announcement_enabled: draft.announcement_enabled,
+        shipping_fee: Number(draft.shipping_fee) || 0,
+        vodafone_number: draft.vodafone_number,
+        instapay_number: draft.instapay_number,
+        support_phone: draft.support_phone,
+        support_email: draft.support_email,
+        instagram_url: draft.instagram_url,
+        facebook_url: draft.facebook_url,
+        tiktok_url: draft.tiktok_url,
       })
       setSettings(updated)
-      toast(t('admin.settings.saved'), 'success')
-    } catch {
-      toast(t('admin.settings.saveError'), 'error')
+      dirtyRef.current = false
+      toast.push(t('admin.settings.saved'), 'success')
+    } catch (err) {
+      toast.push(err.message || t('admin.settings.saveError'), 'error')
     } finally {
       setBusy(false)
     }
@@ -81,23 +100,26 @@ export default function AdminSettings() {
 
       <Section icon={ShoppingBag} title={t('admin.settings.identity')}>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field id="s-name-en" label={t('admin.settings.storeNameEn')} value={settings.store_name_en} onChange={set('store_name_en')} placeholder="Grounded" />
-          <Field id="s-name-ar" label={t('admin.settings.storeNameAr')} value={settings.store_name_ar} onChange={set('store_name_ar')} placeholder="غراوندد" dir="rtl" />
-          <Field id="s-tag-en" label={t('admin.settings.taglineEn')} value={settings.tagline_en} onChange={set('tagline_en')} placeholder="Comfort that grounds you" />
-          <Field id="s-tag-ar" label={t('admin.settings.taglineAr')} value={settings.tagline_ar} onChange={set('tagline_ar')} placeholder="راحة تمنحك الثبات" dir="rtl" />
+          <Field id="s-name-en" label={t('admin.settings.storeNameEn')} value={draft.store_name_en} onChange={set('store_name_en')} placeholder="Grounded" />
+          <Field id="s-name-ar" label={t('admin.settings.storeNameAr')} value={draft.store_name_ar} onChange={set('store_name_ar')} placeholder="غراوندد" dir="rtl" />
+          <Field id="s-tag-en" label={t('admin.settings.taglineEn')} value={draft.tagline_en} onChange={set('tagline_en')} placeholder="Comfort that grounds you" />
+          <Field id="s-tag-ar" label={t('admin.settings.taglineAr')} value={draft.tagline_ar} onChange={set('tagline_ar')} placeholder="راحة تمنحك الثبات" dir="rtl" />
         </div>
       </Section>
 
       <Section icon={Megaphone} title={t('admin.settings.announcement')}>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field id="s-ann-en" label={t('admin.settings.announcementEn')} value={settings.announcement_en} onChange={set('announcement_en')} placeholder="Free shipping over 2000 EGP" />
-          <Field id="s-ann-ar" label={t('admin.settings.announcementAr')} value={settings.announcement_ar} onChange={set('announcement_ar')} placeholder="شحن مجاني للطلبات فوق 2000 ج.م" dir="rtl" />
+          <Field id="s-ann-en" label={t('admin.settings.announcementEn')} value={draft.announcement_en} onChange={set('announcement_en')} placeholder="Free shipping over 2000 EGP" />
+          <Field id="s-ann-ar" label={t('admin.settings.announcementAr')} value={draft.announcement_ar} onChange={set('announcement_ar')} placeholder="شحن مجاني للطلبات فوق 2000 ج.م" dir="rtl" />
         </div>
         <label className="flex w-fit cursor-pointer items-center gap-2.5 text-sm font-medium">
           <input
             type="checkbox"
-            checked={settings.announcement_enabled}
-            onChange={e => setSettings({ ...settings, announcement_enabled: e.target.checked })}
+            checked={draft.announcement_enabled}
+            onChange={e => {
+              dirtyRef.current = true
+              setDraft({ ...draft, announcement_enabled: e.target.checked })
+            }}
             className="size-4 accent-[color:var(--gold-deep)]"
           />
           {t('admin.settings.announcementEnabled')}
@@ -106,30 +128,30 @@ export default function AdminSettings() {
 
       <Section icon={Truck} title={t('admin.settings.shippingTitle')}>
         <div className="max-w-xs">
-          <Field id="s-ship" label={t('admin.settings.shippingFee')} type="number" min="0" value={settings.shipping_fee} onChange={set('shipping_fee')} />
+          <Field id="s-ship" label={t('admin.settings.shippingFee')} type="number" min="0" value={draft.shipping_fee} onChange={set('shipping_fee')} />
         </div>
       </Section>
 
       <Section icon={Smartphone} title={t('admin.settings.walletTitle')}>
         <p className="text-sm text-muted">{t('admin.settings.walletHint')}</p>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field id="s-vodafone" label={t('admin.settings.vodafoneNum')} dir="ltr" value={settings.vodafone_number} onChange={set('vodafone_number')} placeholder="+20 100 000 0000" />
-          <Field id="s-instapay" label={t('admin.settings.instapayNum')} dir="ltr" value={settings.instapay_number} onChange={set('instapay_number')} placeholder="01000000000" />
+          <Field id="s-vodafone" label={t('admin.settings.vodafoneNum')} dir="ltr" value={draft.vodafone_number} onChange={set('vodafone_number')} placeholder="+20 100 000 0000" />
+          <Field id="s-instapay" label={t('admin.settings.instapayNum')} dir="ltr" value={draft.instapay_number} onChange={set('instapay_number')} placeholder="01000000000" />
         </div>
       </Section>
 
       <Section icon={Phone} title={t('admin.settings.contactTitle')}>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field id="s-phone" label={t('admin.settings.phone')} dir="ltr" value={settings.support_phone} onChange={set('support_phone')} />
-          <Field id="s-email" label={t('admin.settings.email')} type="email" dir="ltr" value={settings.support_email} onChange={set('support_email')} />
+          <Field id="s-phone" label={t('admin.settings.phone')} dir="ltr" value={draft.support_phone} onChange={set('support_phone')} />
+          <Field id="s-email" label={t('admin.settings.email')} type="email" dir="ltr" value={draft.support_email} onChange={set('support_email')} />
         </div>
       </Section>
 
       <Section icon={MessageSquareText} title={t('admin.settings.socialsTitle')}>
         <div className="grid gap-4 sm:grid-cols-3">
-          <Field id="s-ig" label={<span className="inline-flex items-center gap-1.5"><Instagram className="size-3.5" aria-hidden="true" /> Instagram</span>} dir="ltr" value={settings.instagram_url} onChange={set('instagram_url')} placeholder="https://instagram.com/..." />
-          <Field id="s-fb" label={<span className="inline-flex items-center gap-1.5"><Facebook className="size-3.5" aria-hidden="true" /> Facebook</span>} dir="ltr" value={settings.facebook_url} onChange={set('facebook_url')} placeholder="https://facebook.com/..." />
-          <Field id="s-tt" label={<span className="inline-flex items-center gap-1.5"><Music2 className="size-3.5" aria-hidden="true" /> TikTok</span>} dir="ltr" value={settings.tiktok_url} onChange={set('tiktok_url')} placeholder="https://tiktok.com/..." />
+          <Field id="s-ig" label={<span className="inline-flex items-center gap-1.5"><Instagram className="size-3.5" aria-hidden="true" /> Instagram</span>} dir="ltr" value={draft.instagram_url} onChange={set('instagram_url')} placeholder="https://instagram.com/..." />
+          <Field id="s-fb" label={<span className="inline-flex items-center gap-1.5"><Facebook className="size-3.5" aria-hidden="true" /> Facebook</span>} dir="ltr" value={draft.facebook_url} onChange={set('facebook_url')} placeholder="https://facebook.com/..." />
+          <Field id="s-tt" label={<span className="inline-flex items-center gap-1.5"><Music2 className="size-3.5" aria-hidden="true" /> TikTok</span>} dir="ltr" value={draft.tiktok_url} onChange={set('tiktok_url')} placeholder="https://tiktok.com/..." />
         </div>
       </Section>
 

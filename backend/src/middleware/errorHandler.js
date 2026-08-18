@@ -22,6 +22,24 @@ function errorHandler(err, req, res, next) {
       path,
     })
   }
+  if (err && typeof err.code === 'string') {
+    if (err.code === '23505' || err.code.includes('SQLITE_CONSTRAINT')) {
+      return res.status(409).json({
+        timestamp: db.nowIso(),
+        status: 409,
+        message: 'That record already exists',
+        path,
+      })
+    }
+    if (err.code === '23503' || err.code.includes('SQLITE_CONSTRAINT_FOREIGNKEY')) {
+      return res.status(400).json({
+        timestamp: db.nowIso(),
+        status: 400,
+        message: 'The record is still in use',
+        path,
+      })
+    }
+  }
   console.error(`Unhandled exception on ${path}:`, err)
   return res.status(500).json({
     timestamp: db.nowIso(),

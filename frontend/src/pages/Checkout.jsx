@@ -11,21 +11,47 @@ import EmptyState from '../components/EmptyState'
 import { useSettings } from '../context/SettingsContext'
 
 
+const GOVERNORATES = {
+  en: [
+    'Cairo', 'Giza', 'Alexandria', 'Dakahlia', 'Red Sea', 'Beheira', 'Fayoum', 'Gharbia',
+    'Ismailia', 'Menoufia', 'Minya', 'Qalyubia', 'New Valley', 'Suez', 'Aswan', 'Assiut',
+    'Beni Suef', 'Port Said', 'Damietta', 'Sharqia', 'South Sinai', 'Kafr El Sheikh',
+    'Matrouh', 'Luxor', 'Qena', 'North Sinai', 'Sohag',
+  ],
+  ar: [
+    'القاهرة', 'الجيزة', 'الإسكندرية', 'الدقهلية', 'البحر الأحمر', 'البحيرة', 'الفيوم', 'الغربية',
+    'الإسماعيلية', 'المنوفية', 'المنيا', 'القليوبية', 'الوادي الجديد', 'السويس', 'أسوان', 'أسيوط',
+    'بني سويف', 'بورسعيد', 'دمياط', 'الشرقية', 'جنوب سيناء', 'كفر الشيخ',
+    'مطروح', 'الأقصر', 'قنا', 'شمال سيناء', 'سوهاج',
+  ],
+}
+
+function newIdemKey() {
+  try {
+    return crypto.randomUUID()
+  } catch {
+    return `${Date.now()}-${Math.random().toString(36).slice(2)}`
+  }
+}
+
 export default function Checkout() {
   const { user } = useAuth()
   const { items, clear, subtotal } = useCart()
   const { settings } = useSettings()
   const toast = useToast()
   const navigate = useNavigate()
-  const { t } = useLang()
+  const { t, lang } = useLang()
 
   const [fullName, setFullName] = useState(user?.full_name || '')
   const [phone, setPhone] = useState('')
   const [address, setAddress] = useState('')
-  const [city, setCity] = useState('Cairo')
+  const [city, setCity] = useState(GOVERNORATES.ar[0])
   const [payment, setPayment] = useState('COD')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [idemKey, setIdemKey] = useState(newIdemKey)
+
+  const governorates = GOVERNORATES[lang] || GOVERNORATES.en
 
   if (items.length === 0) {
     return (
@@ -62,9 +88,11 @@ export default function Checkout() {
         shipping_address: `${address.trim()}, ${city}`,
         phone_number: phone.trim(),
         payment_method: payment.toUpperCase(),
+        idempotency_key: idemKey,
         items: items.map(i => ({ product_id: i.product_id, quantity: i.quantity })),
       })
       clear()
+      setIdemKey(newIdemKey())
       toast.push(t('checkout.placed'))
       if (payment === 'COD') {
         navigate(`/order-success/${order.id}`, { state: { order } })
@@ -126,7 +154,7 @@ export default function Checkout() {
               <div>
                 <label htmlFor="city" className="label">{t('checkout.city')}</label>
                 <select id="city" value={city} onChange={e => setCity(e.target.value)} className="input cursor-pointer">
-                  {['Cairo', 'Giza', 'Alexandria', 'Mansoura', 'Tanta', 'Ismailia', 'Assiut', 'Aswan', 'Luxor', 'Other governorate'].map(c => (
+                  {governorates.map(c => (
                     <option key={c} value={c}>{c}</option>
                   ))}
                 </select>

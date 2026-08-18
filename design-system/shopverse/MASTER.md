@@ -7,8 +7,9 @@
 ---
 
 **Project:** ShopVerse
-**Generated:** 2026-08-14 21:57:37
-**Category:** E-commerce Luxury
+**Generated:** 2026-08-18 14:36:22
+**Category:** E-commerce
+**Design Dials:** Variance 8/10 (Bold / Asymmetric) | Motion 7/10 (Standard)
 
 ---
 
@@ -18,29 +19,29 @@
 
 | Role | Hex | CSS Variable |
 |------|-----|--------------|
-| Primary | `#1C1917` | `--color-primary` |
+| Primary | `#EA580C` | `--color-primary` |
 | On Primary | `#FFFFFF` | `--color-on-primary` |
-| Secondary | `#44403C` | `--color-secondary` |
-| Accent/CTA | `#A16207` | `--color-accent` |
-| Background | `#FAFAF9` | `--color-background` |
-| Foreground | `#0C0A09` | `--color-foreground` |
-| Muted | `#E8ECF0` | `--color-muted` |
-| Border | `#D6D3D1` | `--color-border` |
+| Secondary | `#F97316` | `--color-secondary` |
+| Accent/CTA | `#059669` | `--color-accent` |
+| Background | `#0F172A` | `--color-background` |
+| Foreground | `#FFFFFF` | `--color-foreground` |
+| Muted | `#201C27` | `--color-muted` |
+| Border | `rgba(255,255,255,0.08)` | `--color-border` |
 | Destructive | `#DC2626` | `--color-destructive` |
-| Ring | `#1C1917` | `--color-ring` |
+| Ring | `#EA580C` | `--color-ring` |
 
-**Color Notes:** Premium dark + gold accent [Accent adjusted from #CA8A04 for WCAG 3:1]
+**Color Notes:** Energetic orange + pace green on dark
 
 ### Typography
 
-- **Heading Font:** Satoshi
-- **Body Font:** General Sans
-- **Mood:** premium, modern, clean, sophisticated, versatile, balanced
-- **Google Fonts:** [Satoshi + General Sans](https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap)
+- **Heading Font:** Space Grotesk
+- **Body Font:** Space Grotesk
+- **Mood:** neo brutalism, pop art, loud, bold, heavy, stickers, mechanical, high contrast, cream, gen-z
+- **Google Fonts:** [Space Grotesk + Space Grotesk](https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&display=swap)
 
 **CSS Import:**
 ```css
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&display=swap');
 ```
 
 ### Spacing Variables
@@ -73,7 +74,7 @@
 ```css
 /* Primary Button */
 .btn-primary {
-  background: #A16207;
+  background: #059669;
   color: white;
   padding: 12px 24px;
   border-radius: 8px;
@@ -90,8 +91,8 @@
 /* Secondary Button */
 .btn-secondary {
   background: transparent;
-  color: #1C1917;
-  border: 2px solid #1C1917;
+  color: #EA580C;
+  border: 2px solid #EA580C;
   padding: 12px 24px;
   border-radius: 8px;
   font-weight: 600;
@@ -104,7 +105,7 @@
 
 ```css
 .card {
-  background: #FAFAF9;
+  background: #0F172A;
   border-radius: 12px;
   padding: 24px;
   box-shadow: var(--shadow-md);
@@ -130,9 +131,9 @@
 }
 
 .input:focus {
-  border-color: #1C1917;
+  border-color: #EA580C;
   outline: none;
-  box-shadow: 0 0 0 3px #1C191720;
+  box-shadow: 0 0 0 3px #EA580C20;
 }
 ```
 
@@ -158,28 +159,43 @@
 
 ## Style Guidelines
 
-**Style:** Liquid Glass
+**Style:** Neo Brutalism (Mobile)
 
-**Keywords:** Flowing glass, morphing, smooth transitions, fluid effects, translucent, animated blur, iridescent, chromatic aberration
+**Keywords:** neo brutalism, pop art, stickers, thick borders, cream background, hot red, vivid yellow, soft violet, hard offset shadow, mechanical press, collage
 
-**Best For:** Premium SaaS, high-end e-commerce, creative platforms, branding experiences, luxury portfolios
+**Best For:** Creative tools, collab platforms, Gen Z marketing & e-commerce, portfolio sites, sticker-book style content apps
 
-**Key Effects:** Morphing elements (SVG/CSS), fluid animations (400-600ms curves), dynamic blur (backdrop-filter), color transitions
+**Key Effects:** Thick 4px black borders on all major elements, hard offset shadows (4–8px, no blur), mechanical press: translateX/Y equal to shadow offset, slightly rotated cards/badges (-2deg/2deg), high-saturation color blocking, spring/linear animations only
 
 ### Page Pattern
 
-**Pattern Name:** Minimal Single Column
+**Pattern Name:** Feature-Rich Showcase
 
-- **Conversion Strategy:** Single CTA focus. Large typography. Lots of whitespace. No nav clutter. Mobile-first.
-- **CTA Placement:** Center, large CTA button
-- **Section Order:** 1. Hero headline, 2. Short description, 3. Benefit bullets (3 max), 4. CTA, 5. Footer
+- **CTA Placement:** Above fold
+- **Section Order:** Hero > Features > CTA
+
+---
+
+## Motion
+
+**Stagger List** (Standard) — Trigger: load or scroll | Duration: 300-450ms | Easing: `back.out(1.4)`
+
+```js
+gsap.from('.grid-item', { opacity: 0, scale: 0.92, y: 16, duration: 0.4, stagger: { each: 0.06, from: 'start', grid: 'auto' }, ease: 'back.out(1.4)' });
+```
+
+**Framework notes:** grid: 'auto' lets GSAP infer rows/columns from a CSS grid layout for a natural wave stagger
+
+- ✅ Combine with from: 'center' for a bento-grid layout to draw the eye inward first
+- ❌ Don't use back.out on dense data tables; the overshoot reads as sloppy on informational UI
+- ⚡ Group DOM writes; avoid interleaving layout reads (getBoundingClientRect) between staggered tweens
 
 ---
 
 ## Anti-Patterns (Do NOT Use)
 
-- ❌ Vibrant & Block-based
-- ❌ Playful colors
+- ❌ Flat design without depth
+- ❌ Text-heavy pages
 
 ### Additional Forbidden Patterns
 

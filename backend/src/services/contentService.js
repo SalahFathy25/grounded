@@ -3,6 +3,8 @@
 const fs = require('fs')
 const path = require('path')
 const db = require('../db')
+const { emit } = require('../realtime')
+const audit = require('./auditService')
 
 const CONTENT_ID = 1
 const DEFAULT_FILE = path.join(__dirname, '..', 'assets', 'default-content.json')
@@ -60,6 +62,8 @@ async function update(patch) {
     'UPDATE store_content SET content_json = ?, updated_at = ? WHERE id = ?',
     [JSON.stringify(merged), db.nowIso(), CONTENT_ID],
   )
+  emit('content')
+  audit.log('update', 'content', CONTENT_ID, { sections: Object.keys(patch || {}) })
   return merged
 }
 

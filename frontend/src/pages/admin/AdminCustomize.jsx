@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   ArrowDownUp, Blocks, FileQuestion, LayoutDashboard, ListChecks, Megaphone, MessageSquareQuote,
   Palette, RockingChair, RotateCcw, Save, ScrollText, Server, Sparkles, Trash2, Wand2,
 } from 'lucide-react'
 import { contentApi } from '../../lib/api'
-import { DEFAULT_CONTENT } from '../../lib/mockServer'
+import { DEFAULT_CONTENT } from '../../lib/defaultContent'
 import { useLang } from '../../context/LangContext'
 import { useToast } from '../../context/ToastContext'
+import { subscribeRealtime } from '../../lib/realtime'
 
 const TABS = [
   { id: 'hero', icon: Sparkles },
@@ -125,17 +126,21 @@ export default function AdminCustomize() {
   const [draft, setDraft] = useState(() => structuredClone(DEFAULT_CONTENT))
   const [busy, setBusy] = useState(false)
   const [loaded, setLoaded] = useState(false)
+  const dirtyRef = useRef(false)
 
-  const set = (path, value) => setDraft(prev => {
-    const next = { ...prev }
-    const keys = path.split('.')
-    let node = next
-    for (let i = 0; i < keys.length - 1; i++) {
-      node = node[keys[i]] = Array.isArray(node[keys[i]]) ? [...node[keys[i]]] : { ...node[keys[i]] }
-    }
-    node[keys[keys.length - 1]] = value
-    return next
-  })
+  const set = (path, value) => {
+    dirtyRef.current = true
+    setDraft(prev => {
+      const next = { ...prev }
+      const keys = path.split('.')
+      let node = next
+      for (let i = 0; i < keys.length - 1; i++) {
+        node = node[keys[i]] = Array.isArray(node[keys[i]]) ? [...node[keys[i]]] : { ...node[keys[i]] }
+      }
+      node[keys[keys.length - 1]] = value
+      return next
+    })
+  }
 
   const setPair = (pathBase) => (loc, val) => set(`${pathBase}.${loc}`, val)
 
@@ -144,6 +149,7 @@ export default function AdminCustomize() {
     try {
       const updated = await contentApi.update(payload)
       setDraft(structuredClone(updated))
+      dirtyRef.current = false
       toast(t('admin.customize.saved'), 'success')
     } catch {
       toast(t('admin.customize.saveError'), 'error')
@@ -166,6 +172,14 @@ export default function AdminCustomize() {
   }
 
   useEffect(() => { loadAndSync() }, [])
+
+  useEffect(() => {
+    const unsub = subscribeRealtime(() => {
+      if (dirtyRef.current) return
+      loadAndSync()
+    })
+    return unsub
+  }, [])
 
   const CHIP_TAB_ICONS = { about: Megaphone, sizeGuide: RockingChair }
 

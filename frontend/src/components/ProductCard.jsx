@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Eye, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { useCart } from '../context/CartContext'
 import { useLang } from '../context/LangContext'
 import { catName, formatPrice, salePrice, discountPercent } from '../lib/format'
+import { launchHero } from '../lib/heroImage'
 import Stars from './Stars'
 
 export default function ProductCard({ product }) {
@@ -32,12 +33,20 @@ export default function ProductCard({ product }) {
     setImgIdx(0)
   }
 
+  const handleOpen = e => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
+    const img = e.currentTarget.querySelector('img')
+    if (!img) return
+    launchHero({ src: img.currentSrc || img.src, rect: img.getBoundingClientRect() })
+  }
+
   return (
     <article className="card group overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:border-gold/40 hover:shadow-pop">
       <Link
         to={`/products/${product.id}`}
         className="relative block aspect-square overflow-hidden bg-line/40"
         aria-label={product.name}
+        onClick={handleOpen}
         onMouseEnter={startShow}
         onMouseLeave={stopShow}
       >
@@ -46,18 +55,8 @@ export default function ProductCard({ product }) {
           src={images[multi ? imgIdx : 0] || product.image_url}
           alt={product.name}
           loading="lazy"
-          className={`size-full object-cover transition-transform duration-500 ease-out group-hover:scale-105 ${outOfStock ? 'grayscale' : ''} ${multi ? 'animate-fade-in' : ''}`}
+          className={`size-full object-cover transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-[1.08] ${outOfStock ? 'grayscale' : ''} ${multi ? (lang === 'ar' ? 'animate-img-cycle-rtl' : 'animate-img-cycle') : ''}`}
         />
-        {multi && (
-          <span className="absolute inset-x-0 bottom-16 flex items-center justify-center gap-1" aria-hidden="true">
-            {images.map((_, i) => (
-              <span
-                key={i}
-                className={`h-1 rounded-full transition-all duration-300 ${i === imgIdx ? 'w-3.5 bg-gold' : 'w-1 bg-paper/55'}`}
-              />
-            ))}
-          </span>
-        )}
         <span className="chip absolute start-3 top-3 bg-ink/85 text-paper backdrop-blur-sm">
           {catName(product, lang)}
         </span>
@@ -79,9 +78,6 @@ export default function ProductCard({ product }) {
           >
             <Plus className="size-4" aria-hidden="true" /> {t('pdp.addToCart')}
           </button>
-          <span className="grid size-11 shrink-0 place-items-center rounded-lg bg-paper/90 text-ink shadow-pop backdrop-blur-sm" aria-hidden="true">
-            <Eye className="size-5" />
-          </span>
         </span>
       </Link>
 
@@ -98,7 +94,7 @@ export default function ProductCard({ product }) {
             <span className="text-lg font-bold tracking-tight">{formatPrice(sale)}</span>
             {disc > 0 && <span className="text-sm text-muted line-through">{formatPrice(product.price)}</span>}
           </p>
-          {disc > 0 && <span className="chip bg-danger text-white">{t('products.off', { n: disc })}</span>}
+          {disc > 0 && <span className="chip whitespace-nowrap bg-danger text-white">{t('products.off', { n: disc })}</span>}
         </div>
       </div>
     </article>

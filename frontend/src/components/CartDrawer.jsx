@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, Minus, Plus, ShoppingBag, X } from 'lucide-react'
 import { useCart } from '../context/CartContext'
@@ -7,6 +8,39 @@ import { formatPrice } from '../lib/format'
 export default function CartDrawer() {
   const { items, open, close, updateQty, removeItem, subtotal, count } = useCart()
   const { t } = useLang()
+  const asideRef = useRef(null)
+
+  useEffect(() => {
+    if (!open) return
+    const prevFocus = document.activeElement
+    const node = asideRef.current
+    const focusables = () => [...node.querySelectorAll('button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])')]
+      .filter(el => !el.disabled && el.offsetParent !== null)
+    focusables()[0]?.focus()
+
+    const onKey = e => {
+      if (e.key === 'Escape') { close(); return }
+      if (e.key !== 'Tab') return
+      const list = focusables()
+      if (!list.length) return
+      const first = list[0]
+      const last = list[list.length - 1]
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus() }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus() }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      if (prevFocus instanceof HTMLElement) prevFocus.focus()
+    }
+  }, [open, close])
+
+  useEffect(() => {
+    if (!open) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = prev }
+  }, [open])
 
   const cartTotal = items.reduce((s, i) => s + i.price * i.quantity, 0)
 
@@ -17,8 +51,10 @@ export default function CartDrawer() {
         onClick={close}
       />
       <aside
+        ref={asideRef}
         className={`absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-paper shadow-pop transition-transform duration-300 ${open ? 'translate-x-0' : 'translate-x-full'}`}
         role="dialog"
+        aria-modal="true"
         aria-label={t('cart.title')}
       >
         <header className="flex items-center justify-between border-b border-line px-5 py-4">

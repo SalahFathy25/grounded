@@ -43,9 +43,12 @@ export default function Label({ htmlFor, hint, required = false, children }) {
           <button
             ref={btnRef}
             type="button"
-            tabIndex={-1}
             className="grid size-4.5 cursor-help place-items-center rounded-full bg-ink/5 text-[10px] font-bold text-muted transition-colors duration-200 hover:bg-gold hover:text-paper"
-            aria-label="?"
+            aria-label={hint}
+            aria-expanded={!!tip}
+            onFocus={open}
+            onBlur={close}
+            onClick={() => (tip ? close() : open())}
           >
             ?
           </button>

@@ -1,12 +1,12 @@
 import { NavLink, Outlet, Link } from 'react-router-dom'
-import { ExternalLink, LayoutDashboard, LogOut, Package, Palette, Settings, ShoppingCart, Menu, X } from 'lucide-react'
+import { ExternalLink, LayoutDashboard, LayoutGrid, LogOut, Package, Palette, ScrollText, Settings, ShoppingCart, Users, Menu, X } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useLang } from '../../context/LangContext'
 import { initials } from '../../lib/format'
 
 export default function AdminLayout() {
-  const { user, logout } = useAuth()
+  const { user, isSuperAdmin, logout } = useAuth()
   const { t } = useLang()
   const [open, setOpen] = useState(false)
 
@@ -14,6 +14,13 @@ export default function AdminLayout() {
     { to: '/admin', label: t('admin.dashboard'), icon: LayoutDashboard, end: true },
     { to: '/admin/products', label: t('admin.products'), icon: Package, end: false },
     { to: '/admin/orders', label: t('admin.orders'), icon: ShoppingCart, end: false },
+    { to: '/admin/categories', label: t('admin.categories.title'), icon: LayoutGrid, end: false },
+    ...(isSuperAdmin
+      ? [
+          { to: '/admin/users', label: t('admin.users.title'), icon: Users, end: false },
+          { to: '/admin/logs', label: t('admin.logs.title'), icon: ScrollText, end: false },
+        ]
+      : []),
     { to: '/admin/customize', label: t('admin.customize.title'), icon: Palette, end: false },
     { to: '/admin/settings', label: t('admin.settings.title'), icon: Settings, end: false },
   ]

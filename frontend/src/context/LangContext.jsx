@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { translations } from '../lang/translations'
+import { setFormatLang } from '../lib/format'
 
 const LangContext = createContext(null)
 const LANG_KEY = 'grounded_lang'
@@ -19,6 +20,7 @@ export function LangProvider({ children }) {
     localStorage.setItem(LANG_KEY, lang)
     document.documentElement.lang = lang
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr'
+    setFormatLang(lang)
   }, [lang])
 
   const toggle = useCallback(() => setLang(l => (l === 'ar' ? 'en' : 'ar')), [])

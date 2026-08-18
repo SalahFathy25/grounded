@@ -1,12 +1,13 @@
-import { Link } from 'react-router-dom'
 import { Star, StarHalf } from 'lucide-react'
+import { useLang } from '../context/LangContext'
 
 export default function Stars({ rating = 0, size = 'size-3.5', showValue = false }) {
+  const { t } = useLang()
   if (!rating || rating <= 0) return null
   const full = Math.floor(rating)
   const half = rating - full >= 0.4
   return (
-    <span className="inline-flex items-center gap-0.5 text-gold" aria-label={`Rated ${rating} out of 5`}>
+    <span className="inline-flex items-center gap-0.5 text-gold" aria-label={t('stars.rated', { rating: rating.toFixed(1) })}>
       {Array.from({ length: 5 }).map((_, i) => (
         <span key={i} className="relative inline-flex">
           {i < full ? (

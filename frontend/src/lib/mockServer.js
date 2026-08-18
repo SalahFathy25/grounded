@@ -1,6 +1,8 @@
 /* Mock backend — mirrors the real Spring Boot REST API (see backend/).
    Data persists in localStorage. Swap to the real API with VITE_USE_MOCK=false. */
 
+import { DEFAULT_CONTENT } from './defaultContent'
+
 const DB_KEY = 'grounded_db_v4'
 const TOKEN_KEY = 'sv_token'
 const CONTENT_KEY = 'grounded_content_v1'
@@ -60,85 +62,6 @@ function loadDB() {
 
 let db = loadDB()
 const save = () => localStorage.setItem(DB_KEY, JSON.stringify(db))
-
-/* ===== Editable site content (hero, sections, FAQ, testimonials, footer…) ===== */
-export const DEFAULT_CONTENT = {
-  hero: {
-    badge: { en: 'New season · 2026 drops', ar: 'موسم جديد · تشكيلات 2026' },
-    title1: { en: 'Streetwear that', ar: 'ملابس شبابية' },
-    title2: { en: 'fits your vibe.', ar: 'على ذوقك' },
-    sub: { en: 'Premium tees, shirts and pants — quality you can feel, at prices that make sense.', ar: 'تيشيرتات وقمصان وبناطيل بجودة تلمسها — بأسعار منطقية.' },
-    cta: { en: 'Shop now', ar: 'تسوق الآن' },
-    browse: { en: 'Browse categories', ar: 'تصفح الفئات' },
-    image: 'https://images.unsplash.com/photo-1496217590455-aa63a8350eea?w=1800&h=1200&q=80&auto=format&fit=crop',
-    rating: '4.8/5',
-    reviews: { en: 'from 4,200+ verified reviews', ar: 'من أكتر من ٤٢٠٠ تقييم موثّق' },
-    chips: [
-      { icon: 'truck', label: { en: 'Free shipping', ar: 'شحن مجاني' } },
-      { icon: 'phone', label: { en: 'Contact us', ar: 'اتصل بينا' } },
-      { icon: 'shield', label: { en: 'Secure checkout', ar: 'دفع آمن' } },
-      { icon: 'headset', label: { en: '24/7 support', ar: 'دعم 24/7' } },
-    ],
-  },
-  sections: {
-    categories: true, featured: true, spotlight: true, about: true,
-    testimonials: true, faq: true, sizeGuide: true, stats: true,
-  },
-  headings: {
-    categories: { tag: { en: 'Collections', ar: 'التشكيلات' }, title: { en: 'Shop by category', ar: 'تسوق حسب الفئة' } },
-    featured: { tag: { en: 'Picked for you', ar: 'اختير لك' }, title: { en: 'Featured products', ar: 'منتجات مميزة' } },
-    spotlight: { tag: { en: 'Curated', ar: 'منسّق لك' }, title: { en: 'Pick your category', ar: 'اختار فئتك' } },
-    about: { tag: { en: 'Brand story', ar: 'قصة البراند' }, title: { en: 'Quality you can feel,', ar: 'جودة تحس بيها' }, title2: { en: 'prices you will love.', ar: 'وأسعار هتحبها' } },
-    testimonials: { tag: { en: 'Testimonials', ar: 'آراء العملاء' }, title: { en: 'What the crew says', ar: 'قالوا عنّا' } },
-    faq: { tag: { en: 'FAQ', ar: 'أسئلة شائعة' }, title: { en: 'Questions? Answered.', ar: 'عندك سؤال؟ عندنا الجواب' } },
-    sizeGuide: { tag: { en: 'Size guide', ar: 'دليل المقاسات' }, title: { en: 'Find your fit', ar: 'اعرف مقاسك' }, sub: { en: 'Measurements in centimeters. Take a shirt you love, measure it, and compare.', ar: 'القياسات بالسنتيمتر. خد قميص بتحبه، قيسه، وقارن.' } },
-    stats: { tag: { en: 'By the numbers', ar: 'بالأرقام' }, title: { en: 'Trust, delivered', ar: 'ثقة مع كل طلب' } },
-  },
-  about: {
-    text: { en: 'Grounded started with a simple idea: premium streetwear — tees, shirts and pants — without the premium markup. Hand-picked fabrics, honest prices, delivered across Egypt within 24 hours.', ar: 'غراوندد بدأت بفكرة بسيطة: ستريت وير مميز — تيشيرتات وقمصان وبناطيل — من غير هوامش ربح مبالغ فيها. أقمشة مختارة بعناية، وأسعار صريحة، وتوصيل لكل مصر خلال ٢٤ ساعة.' },
-    cta: { en: 'Explore the collection', ar: 'اكتشف التشكيلة' },
-    image: 'https://images.unsplash.com/photo-1521119989659-a83eee488004?w=900&h=1100&q=80&auto=format&fit=crop',
-  },
-  values: [
-    { title: { en: 'Honest pricing', ar: 'أسعار صريحة' }, desc: { en: 'Fair margins, no inflated tags. Sale prices mean real discounts.', ar: 'هوامش ربح عادلة ومن غير أسعار مبالغ فيها. والخصومات خصومات حقيقية.' } },
-    { title: { en: 'Quality you feel', ar: 'جودة تحس بيها' }, desc: { en: 'Heavyweight fabrics and strong stitching, checked before every shipment.', ar: 'أقمشة هيفي وخياطة متينة، وبيتم الفحص قبل كل شحنة.' } },
-    { title: { en: 'Speed you can count on', ar: 'سرعة في موعدها' }, desc: { en: 'Your order leaves the warehouse within 24 hours, nationwide.', ar: 'طلبك بيخرج من المستودع خلال ٢٤ ساعة، لكل مصر.' } },
-  ],
-  faqs: [
-    { q: { en: 'How fast is shipping?', ar: 'التوصيل بياخد قد إيه؟' }, a: { en: 'Orders ship within 24 hours and reach most governorates across Egypt within 1-2 days.', ar: 'الطلب بيتشحن خلال ٢٤ ساعة وبيوصل أغلب محافظات مصر خلال يوم أو يومين.' } },
-    { q: { en: 'Can I exchange or return items?', ar: 'ينفع أستبدل أو أرجّع الطلب؟' }, a: { en: 'Yes — within 14 days of delivery, as long as the item is unworn with tags attached.', ar: 'أكيد — خلال ١٤ يوم من الاستلام، بشرط يكون اللبس بحالته وبتاغاته.' } },
-    { q: { en: 'How do I know my size?', ar: 'أعرف مقاسي إزاي؟' }, a: { en: 'Check the size guide above. Between sizes? Go up — relaxed fits are the streetwear way.', ar: 'شوف دليل المقاسات فوق. لو بين مقاسين؟ اختار الأكبر — القصّة المريحة هي ستايل الستريت وير.' } },
-    { q: { en: 'Which payment methods do you accept?', ar: 'أي طرق الدفع المتاحة؟' }, a: { en: 'Cash on delivery, Visa, Vodafone Cash and InstaPay.', ar: 'الدفع عند الاستلام، فيزا، فودافون كاش، وإنستاباي.' } },
-    { q: { en: 'How do I track my order?', ar: 'أتابع طلبي إزاي؟' }, a: { en: 'Log in and open "My Orders" — every order shows its latest status.', ar: 'سجّل دخولك وافتح صفحة "طلباتي" — كل طلب بيعرض آخر حالة ليه.' } },
-  ],
-  testimonials: [
-    { name: 'Omar Khaled', city: { en: 'Cairo', ar: 'القاهرة' }, quote: { en: 'Ordered a tee Thursday night, it arrived in Cairo Saturday morning. The fit and fabric are on another level for the price.', ar: 'طلبت تيشيرت الخميس بالليل ووصلني القاهرة السبت الصبح. الخامة والمقاس على مستوى تاني بالنسبة للسعر.' }, avatar: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=96&h=96&q=80&auto=format&fit=crop' },
-    { name: 'Youssef Adel', city: { en: 'Alexandria', ar: 'الإسكندرية' }, quote: { en: 'The heavyweight tees are the best I have owned. You feel the quality the second you put one on.', ar: 'التيشيرتات الهيفي أفضل حاجة لبستها في حياتي. بتحس بالجودة أول ما تلبسها.' }, avatar: 'https://images.unsplash.com/photo-1562157873-818bc0726f68?w=96&h=96&q=80&auto=format&fit=crop' },
-    { name: 'Mostafa Tarek', city: { en: 'Giza', ar: 'الجيزة' }, quote: { en: 'Support actually replies fast. Swapped my size with zero fuss, no questions asked.', ar: 'خدمة العملاء بترد بسرعة فعلًا. بدّلوا المقاس من غير أي تعقيد أو أسئلة.' }, avatar: 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=96&h=96&q=80&auto=format&fit=crop' },
-    { name: 'Karim Samy', city: { en: 'Sharqia', ar: 'الشرقية' }, quote: { en: 'The cargo pants fit exactly like the photos. Sizing is honest, which is rare online.', ar: 'البنطال الكارجو مقاسه نفس الصور بالظبط. المقاسات صريحة — ودي حاجة نادرة في التسوق أونلاين.' }, avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=96&h=96&q=80&auto=format&fit=crop' },
-    { name: 'Adam Fathy', city: { en: 'Mansoura', ar: 'المنصورة' }, quote: { en: 'Got the flannel overshirt for winter. Thick, warm, and the buttons feel premium.', ar: 'جبت القميص الفلانيل للشتا. سميك ودافي والزرارات شكلها فخم.' }, avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=96&h=96&q=80&auto=format&fit=crop' },
-    { name: 'Seif El-Din', city: { en: 'Hurghada', ar: 'الغردقة' }, quote: { en: 'Reached Hurghada in two days. Best packaging I have seen from an Egyptian store.', ar: 'وصل الغردقة يومين بس. أحسن تغليف شفته من متجر مصري.' }, avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=96&h=96&q=80&auto=format&fit=crop' },
-    { name: 'Mohab Ashraf', city: { en: 'Tanta', ar: 'طنطا' }, quote: { en: 'The heavyweight fabric is no joke. Washed it five times, still holds shape and color.', ar: 'خامة الهيفي مش هزار. غسلتها خمس مرات ولسه محتفظة بشكلها ولونها.' }, avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=96&h=96&q=80&auto=format&fit=crop' },
-    { name: 'Yehia Nabil', city: { en: 'Assiut', ar: 'أسيوط' }, quote: { en: 'Easy ordering, and the COD option makes it stress-free. Will order again.', ar: 'الطلب سهل والدفع عند الاستلام بيلغي أي قلق. هطلب تاني أكيد.' }, avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=96&h=96&q=80&auto=format&fit=crop' },
-    { name: 'Ziad Hassan', city: { en: '6th of October', ar: 'السادس من أكتوبر' }, quote: { en: 'My third order here. Consistent quality, and the phone support answered in seconds.', ar: 'ده طلبي التالت هنا. جودة ثابتة والدعم على التليفون رد في ثانية.' }, avatar: 'https://images.unsplash.com/photo-1522529599102-029c65a7a38e?w=96&h=96&q=80&auto=format&fit=crop' },
-  ],
-  sizeRows: [
-    { size: 'S', chest: 96, length: 68, fit: { en: 'Slim', ar: 'لاصق' } },
-    { size: 'M', chest: 102, length: 71, fit: { en: 'Regular', ar: 'عادي' } },
-    { size: 'L', chest: 108, length: 74, fit: { en: 'Regular', ar: 'عادي' } },
-    { size: 'XL', chest: 114, length: 77, fit: { en: 'Loose', ar: 'فضفاض' } },
-  ],
-  stats: [
-    { value: '4.8/5', label: { en: 'Average rating', ar: 'متوسط التقييم' } },
-    { value: '+12K', label: { en: 'Orders delivered', ar: 'طلب تم توصيله' } },
-    { value: '27', label: { en: 'Governorates covered', ar: 'محافظة' } },
-    { value: '24h', label: { en: 'Hours to ship', ar: 'ساعة للتوصيل' } },
-  ],
-  footer: {
-    tagline: { en: 'Premium streetwear at honest prices. T-shirts, shirts, pants and more — delivered across Egypt.', ar: 'ملابس شبابية بجودة عالية وأسعار مناسبة. تيشيرتات وقمصان وبناطيل وأكثر — توصيل لجميع محافظات مصر.' },
-    city: { en: 'Cairo, Egypt', ar: 'القاهرة، مصر' },
-  },
-}
 
 function loadContent() {
   try {

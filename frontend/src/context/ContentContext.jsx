@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { contentApi } from '../lib/api'
-import { DEFAULT_CONTENT } from '../lib/mockServer'
+import { DEFAULT_CONTENT } from '../lib/defaultContent'
 
 const ContentContext = createContext(null)
 
@@ -23,7 +23,13 @@ export function ContentProvider({ children }) {
     return next
   }, [])
 
-  const value = useMemo(() => ({ content, update }), [content, update])
+  const refresh = useCallback(() => {
+    contentApi.get()
+      .then(setContent)
+      .catch(() => {})
+  }, [])
+
+  const value = useMemo(() => ({ content, update, refresh }), [content, update, refresh])
 
   return <ContentContext.Provider value={value}>{children}</ContentContext.Provider>
 }

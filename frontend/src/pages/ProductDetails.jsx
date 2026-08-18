@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ArrowRight, CheckCircle2, ChevronRight, Minus, Package, Plus, ShoppingBag, Zap } from 'lucide-react'
+import { ArrowRight, Check, CheckCircle2, ChevronRight, CreditCard, Hash, Headphones, Layers, Minus, Package, Palette, Plus, RotateCcw, Ruler, Search, Shirt, ShieldCheck, ShoppingBag, Tag, Truck, Zap } from 'lucide-react'
 import { productApi } from '../lib/api'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
@@ -8,13 +8,14 @@ import { useLang } from '../context/LangContext'
 import { catName, formatPrice, salePrice, discountPercent } from '../lib/format'
 import Stars from '../components/Stars'
 import ProductCard from '../components/ProductCard'
+import ZoomImage from '../components/ZoomImage'
 import EmptyState from '../components/EmptyState'
 import { ProductGridSkeleton } from '../components/Skeletons'
 
 export default function ProductDetails() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { addToCart } = useCart()
+  const { addToCart, close } = useCart()
   const { user } = useAuth()
   const { t, lang } = useLang()
   const [product, setProduct] = useState(null)
@@ -35,7 +36,7 @@ export default function ProductDetails() {
         if (cancelled) return
         setProduct(p)
         try {
-          const rel = await productApi.list({ category: p.category_id, size: 100 })
+          const rel = await productApi.list({ category: p.category_id, size: 12 })
           if (!cancelled) setRelated(rel.content.filter(r => r.id !== p.id).slice(0, 4))
         } catch { /* ignore */ }
       })
@@ -82,19 +83,18 @@ export default function ProductDetails() {
   const gallery = [
     product.image_url,
     ...(product.images || []).slice(1),
-    product.image_url.replace(/\/800\/800/, '/800/800?v=2'),
-    product.image_url.replace(/\/800\/800/, '/800/800?v=3'),
   ].filter((src, i, arr) => src && arr.indexOf(src) === i)
 
   const buyNow = () => {
     addToCart(product, qty)
+    close()
     navigate('/checkout')
   }
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:py-10">
       {/* Breadcrumb */}
-      <nav className="mb-6 flex flex-wrap items-center gap-1.5 text-sm text-muted" aria-label="Breadcrumb">
+      <nav className="mb-6 flex flex-wrap items-center gap-1.5 text-sm text-muted" aria-label={t('pdp.breadcrumb')}>
         <Link to="/" className="hover:text-gold-deep">{t('pdp.breadcrumbHome')}</Link>
         <ChevronRight className="size-3.5 rtl:rotate-180" aria-hidden="true" />
         <Link to="/products" className="hover:text-gold-deep">{t('pdp.breadcrumbShop')}</Link>
@@ -111,8 +111,14 @@ export default function ProductDetails() {
       <div className="grid gap-10 lg:grid-cols-2 lg:gap-14">
         {/* Gallery */}
         <div>
-          <div className="relative overflow-hidden rounded-3xl border border-line bg-paper">
-            <img src={gallery[image]} alt={product.name} className="aspect-square w-full object-cover" />
+          <div className="group relative overflow-hidden rounded-3xl border border-line bg-paper" aria-label={t('pdp.zoomHint')}>
+            <ZoomImage src={gallery[image]} alt={product.name} className="aspect-square" />
+            <span className="absolute right-3 top-3 grid place-items-center rounded-full border border-line bg-paper/90 px-2.5 py-1 text-xs font-semibold text-ink backdrop-blur-sm" aria-hidden="true">
+              {image + 1} / {gallery.length}
+            </span>
+            <span className="pointer-events-none absolute bottom-3 right-3 grid size-9 place-items-center rounded-full bg-ink/85 text-paper opacity-0 transition-opacity duration-300 group-hover:opacity-100" aria-hidden="true">
+              <Search className="size-4" />
+            </span>
           </div>
           <div className="mt-3 flex gap-3">
             {gallery.map((src, i) => (
@@ -120,11 +126,16 @@ export default function ProductDetails() {
                 key={i}
                 type="button"
                 onClick={() => setImage(i)}
-                className={`size-20 cursor-pointer overflow-hidden rounded-xl border-2 transition-colors ${image === i ? 'border-gold' : 'border-line hover:border-ink/40'}`}
-                aria-label={`View image ${i + 1}`}
+                className={`relative size-16 cursor-pointer overflow-hidden rounded-xl border-2 transition-colors sm:size-20 ${image === i ? 'border-gold' : 'border-line hover:border-ink/40'}`}
+                aria-label={t('pdp.viewImage', { n: i + 1 })}
                 aria-pressed={image === i}
               >
                 <img src={src} alt="" className="size-full object-cover" loading="lazy" />
+                {image === i && (
+                  <span className="absolute right-1 top-1 grid size-5 place-items-center rounded-full bg-gold text-gold-bright" aria-hidden="true">
+                    <Check className="size-3" strokeWidth={3} />
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -169,62 +180,82 @@ export default function ProductDetails() {
           {(product.brand || product.sku || product.material || product.color || product.sizes || product.tags) && (
             <dl className="mt-6 grid grid-cols-1 gap-x-8 gap-y-4 rounded-2xl border border-line bg-paper p-5 text-sm sm:grid-cols-2">
               {product.brand && (
-                <div>
-                  <dt className="text-xs font-semibold uppercase tracking-wide text-muted">{t('pdp.brand')}</dt>
-                  <dd className="mt-1 font-semibold">{product.brand}</dd>
+                <div className="flex items-start gap-3">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-gold-tint text-gold-deep"><Shirt className="size-4" aria-hidden="true" /></span>
+                  <div>
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-muted">{t('pdp.brand')}</dt>
+                    <dd className="mt-1 font-semibold">{product.brand}</dd>
+                  </div>
                 </div>
               )}
               {product.sku && (
-                <div>
-                  <dt className="text-xs font-semibold uppercase tracking-wide text-muted">{t('pdp.sku')}</dt>
-                  <dd className="mt-1 font-medium">{product.sku}</dd>
+                <div className="flex items-start gap-3">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-gold-tint text-gold-deep"><Hash className="size-4" aria-hidden="true" /></span>
+                  <div>
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-muted">{t('pdp.sku')}</dt>
+                    <dd className="mt-1 font-medium">{product.sku}</dd>
+                  </div>
                 </div>
               )}
               {product.material && (
-                <div>
-                  <dt className="text-xs font-semibold uppercase tracking-wide text-muted">{t('pdp.material')}</dt>
-                  <dd className="mt-1 font-medium">{product.material}</dd>
+                <div className="flex items-start gap-3">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-gold-tint text-gold-deep"><Layers className="size-4" aria-hidden="true" /></span>
+                  <div>
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-muted">{t('pdp.material')}</dt>
+                    <dd className="mt-1 font-medium">{product.material}</dd>
+                  </div>
                 </div>
               )}
               {product.color && (
-                <div>
-                  <dt className="text-xs font-semibold uppercase tracking-wide text-muted">{t('pdp.colors')}</dt>
-                  <dd className="mt-1.5 flex flex-wrap gap-1.5">
-                    {product.color.split(',').map(c => c.trim()).filter(Boolean).map(c => (
-                      <span key={c} className="chip bg-gold-tint text-gold-deep">{c}</span>
-                    ))}
-                  </dd>
+                <div className="flex items-start gap-3">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-gold-tint text-gold-deep"><Palette className="size-4" aria-hidden="true" /></span>
+                  <div>
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-muted">{t('pdp.colors')}</dt>
+                    <dd className="mt-1.5 flex flex-wrap gap-1.5">
+                      {product.color.split(',').map(c => c.trim()).filter(Boolean).map(c => (
+                        <span key={c} className="chip bg-gold-tint text-gold-deep">{c}</span>
+                      ))}
+                    </dd>
+                  </div>
                 </div>
               )}
               {product.sizes && (
-                <div>
-                  <dt className="text-xs font-semibold uppercase tracking-wide text-muted">{t('pdp.sizes')}</dt>
-                  <dd className="mt-1.5 flex flex-wrap gap-1.5">
-                    {product.sizes.split(',').map(s => s.trim()).filter(Boolean).map(s => (
-                      <span key={s} className="chip border border-line bg-paper text-ink">{s}</span>
-                    ))}
-                  </dd>
+                <div className="flex items-start gap-3">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-gold-tint text-gold-deep"><Ruler className="size-4" aria-hidden="true" /></span>
+                  <div>
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-muted">{t('pdp.sizes')}</dt>
+                    <dd className="mt-1.5 flex flex-wrap gap-1.5">
+                      {product.sizes.split(',').map(s => s.trim()).filter(Boolean).map(s => (
+                        <span key={s} className="chip border border-line bg-paper text-ink">{s}</span>
+                      ))}
+                    </dd>
+                  </div>
                 </div>
               )}
               {product.tags && (
                 <div className="sm:col-span-2">
-                  <dt className="text-xs font-semibold uppercase tracking-wide text-muted">{t('pdp.tags')}</dt>
-                  <dd className="mt-1.5 flex flex-wrap gap-1.5">
-                    {product.tags.split(',').map(tag => tag.trim()).filter(Boolean).map(tag => (
-                      <Link to={`/products?q=${encodeURIComponent(tag)}`} key={tag} className="chip hover:border-gold/50 hover:text-gold-deep">{tag}</Link>
-                    ))}
-                  </dd>
+                  <div className="flex items-start gap-3">
+                    <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-gold-tint text-gold-deep"><Tag className="size-4" aria-hidden="true" /></span>
+                    <div>
+                      <dt className="text-xs font-semibold uppercase tracking-wide text-muted">{t('pdp.tags')}</dt>
+                      <dd className="mt-1.5 flex flex-wrap gap-1.5">
+                        {product.tags.split(',').map(tag => tag.trim()).filter(Boolean).map(tag => (
+                          <Link to={`/products?q=${encodeURIComponent(tag)}`} key={tag} className="chip hover:border-gold/50 hover:text-gold-deep">{tag}</Link>
+                        ))}
+                      </dd>
+                    </div>
+                  </div>
                 </div>
               )}
             </dl>
           )}
 
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <div className="flex h-12 items-center rounded-xl border border-line bg-paper">
+            <div className="flex h-12 w-full items-center rounded-xl border border-line bg-paper sm:w-auto">
               <button
                 type="button"
                 onClick={() => setQty(q => Math.max(1, q - 1))}
-                className="grid size-12 cursor-pointer place-items-center text-ink-soft hover:text-gold-deep"
+                className="grid size-12 flex-1 cursor-pointer place-items-center text-ink-soft hover:text-gold-deep"
                 aria-label={t('pdp.decreaseQty')}
               >
                 <Minus className="size-4" aria-hidden="true" />
@@ -233,7 +264,7 @@ export default function ProductDetails() {
               <button
                 type="button"
                 onClick={() => setQty(q => Math.min(product.stock_quantity || 99, q + 1))}
-                className="grid size-12 cursor-pointer place-items-center text-ink-soft hover:text-gold-deep"
+                className="grid size-12 flex-1 cursor-pointer place-items-center text-ink-soft hover:text-gold-deep"
                 aria-label={t('pdp.increaseQty')}
               >
                 <Plus className="size-4" aria-hidden="true" />
@@ -252,10 +283,26 @@ export default function ProductDetails() {
             </button>
           </div>
 
-          <ul className="mt-8 space-y-3 rounded-2xl border border-line bg-paper p-5 text-sm">
-            <li className="flex items-center gap-3">
-              <CheckCircle2 className="size-5 shrink-0 text-gold" aria-hidden="true" />
-              <span>{t('pdp.paymentLine')}</span>
+          <ul className="mt-8 grid grid-cols-2 gap-4 rounded-2xl border border-line bg-paper p-5 text-sm sm:grid-cols-4">
+            <li className="flex items-center gap-2.5">
+              <Truck className="size-5 shrink-0 text-gold" aria-hidden="true" />
+              <span>{t('pdp.trustShip')}</span>
+            </li>
+            <li className="flex items-center gap-2.5">
+              <RotateCcw className="size-5 shrink-0 text-gold" aria-hidden="true" />
+              <span>{t('pdp.trustReturn')}</span>
+            </li>
+            <li className="flex items-center gap-2.5">
+              <ShieldCheck className="size-5 shrink-0 text-gold" aria-hidden="true" />
+              <span>{t('pdp.trustSecure')}</span>
+            </li>
+            <li className="flex items-center gap-2.5">
+              <Headphones className="size-5 shrink-0 text-gold" aria-hidden="true" />
+              <span>{t('pdp.trustSupport')}</span>
+            </li>
+            <li className="col-span-2 flex items-center gap-2 border-t border-line pt-3 text-xs text-muted sm:col-span-4">
+              <CreditCard className="size-4 shrink-0 text-gold" aria-hidden="true" />
+              {t('pdp.paymentLine')}
             </li>
           </ul>
 

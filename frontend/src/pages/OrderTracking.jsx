@@ -163,7 +163,8 @@ export default function OrderTracking() {
     : !!order.paid_at || ['PAID', 'SHIPPED', 'DELIVERED'].includes(order.status)
   const walletNumber = order.payment_method === 'VODAFONE_CASH' ? settings.vodafone_number : settings.instapay_number
   const shippingFee = Number(order.shipping_fee) || 0
-  const subtotal = Math.round((order.total_amount - shippingFee) * 100) / 100
+  const subtotal = Math.round(order.total_amount * 100) / 100
+  const orderTotal = Math.round((order.total_amount + shippingFee) * 100) / 100
 
   const copy = async () => {
     try {
@@ -251,7 +252,7 @@ export default function OrderTracking() {
               </div>
               <div className="flex justify-between border-t border-line pt-3">
                 <dt className="font-bold">{t('checkout.total')}</dt>
-                <dd className="text-xl font-bold">{formatPrice(order.total_amount + shippingFee)}</dd>
+                <dd className="text-xl font-bold">{formatPrice(orderTotal)}</dd>
               </div>
             </dl>
           </div>

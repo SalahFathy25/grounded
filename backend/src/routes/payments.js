@@ -8,7 +8,7 @@ const router = express.Router()
 
 router.post('/checkout', wrap(async (req, res) => {
   const body = req.body || {}
-  res.json(await paymentService.checkout(toNumOrNull(body.order_id), toNumOrNull(body.amount)))
+  res.json(await paymentService.checkout(req.user, toNumOrNull(body.order_id), toNumOrNull(body.amount)))
 }))
 
 router.post('/webhook', wrap(async (req, res) => {

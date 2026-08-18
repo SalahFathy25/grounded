@@ -83,7 +83,7 @@ export default function MyOrders() {
                   <Link to={`/orders/${o.id}`} className="btn btn-primary btn-sm">
                     {t('track.viewDetails')} <ArrowRight className="size-3.5 rtl:rotate-180" aria-hidden="true" />
                   </Link>
-                  <p className="font-bold">{formatPrice(o.total_amount)}</p>
+                  <p className="font-bold">{formatPrice(o.total_amount + (Number(o.shipping_fee) || 0))}</p>
                 </div>
               </footer>
             </li>

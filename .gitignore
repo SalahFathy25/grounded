@@ -19,3 +19,5 @@ deploy/
 *.zip
 .vercel
 .env*
+
+assets/

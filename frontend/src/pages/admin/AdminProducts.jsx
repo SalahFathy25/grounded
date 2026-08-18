@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Loader2, Package, PackageSearch, PackageX, Pencil, Plus, RefreshCw, Search, Upload, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Loader2, Package, PackageSearch, PackageX, Pencil, Plus, RefreshCw, Search, Trash2, Upload, X } from 'lucide-react'
 import { categoryApi, productApi } from '../../lib/api'
 import { clamp, compressImage, formatPrice, salePrice, discountPercent } from '../../lib/format'
 import { useToast } from '../../context/ToastContext'
@@ -7,6 +7,9 @@ import { useLang } from '../../context/LangContext'
 import Label from '../../components/Label'
 import EmptyState from '../../components/EmptyState'
 import { RowSkeleton } from '../../components/Skeletons'
+import { subscribeRealtime } from '../../lib/realtime'
+
+const PAGE_SIZE = 20
 
 const calcSale = (base, disc) => Math.round(Number(base) * (100 - Number(disc))) / 100
 
@@ -22,21 +25,77 @@ export default function AdminProducts() {
   const [products, setProducts] = useState(null)
   const [categories, setCategories] = useState([])
   const [query, setQuery] = useState('')
+  const [page, setPage] = useState(0)
   const [editing, setEditing] = useState(null) // null | 'new' | product
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [selected, setSelected] = useState(new Set())
+  const [deleting, setDeleting] = useState(false)
 
   const load = useCallback(() => {
-    productApi.list({ size: 100, include_inactive: true }).then(setProducts).catch(() => {})
+    setError('')
+    productApi.list({ page, size: PAGE_SIZE, include_inactive: true, q: query.trim() || undefined })
+      .then(setProducts)
+      .catch(err => setError(err.message))
+  }, [page, query])
+
+  useEffect(() => {
+    const t = setTimeout(load, query ? 300 : 0)
+    return () => clearTimeout(t)
+  }, [load])
+
+  useEffect(() => {
+    setPage(0)
+    setSelected(new Set())
+  }, [query])
+
+  useEffect(() => {
+    categoryApi.list().then(setCategories).catch(() => {})
   }, [])
 
   useEffect(() => {
-    load()
-    categoryApi.list().then(setCategories).catch(() => {})
+    const unsub = subscribeRealtime(() => load())
+    return unsub
   }, [load])
 
-  const filtered = products?.content.filter(p =>
-    !query || p.name.toLowerCase().includes(query.toLowerCase()) || (p.description || '').toLowerCase().includes(query.toLowerCase())
-  )
+  const allOnPageSelected = () => products && products.content.length > 0 && products.content.every(p => selected.has(p.id))
+
+  const toggleSelect = id => {
+    setSelected(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  const toggleSelectAll = () => {
+    setSelected(prev => {
+      const next = new Set(prev)
+      if (allOnPageSelected()) {
+        for (const p of products.content) next.delete(p.id)
+      } else {
+        for (const p of products.content) next.add(p.id)
+      }
+      return next
+    })
+  }
+
+  const deleteSelected = async () => {
+    const ids = [...selected]
+    if (ids.length === 0) return
+    if (!window.confirm(t('admin.products.deleteConfirm', { n: ids.length }))) return
+    setDeleting(true)
+    try {
+      await productApi.deleteMany(ids)
+      toast.push(t('admin.products.deletedToast', { n: ids.length }))
+      setSelected(new Set())
+      load()
+    } catch (err) {
+      toast.push(err.message, 'error')
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   const toggleActive = async p => {
     try {
@@ -92,7 +151,7 @@ export default function AdminProducts() {
     sizes: p.sizes || '',
     tags: p.tags || '',
     featured: p.featured === true,
-    images: p.images?.length ? p.images : (p.image_url ? [p.image_url] : []),
+    images: [p.image_url, ...(p.images || [])].filter(Boolean),
     description: p.description || '',
   })
 
@@ -118,16 +177,42 @@ export default function AdminProducts() {
         </button>
       </div>
 
-      {!products ? (
+      {selected.size > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-danger/30 bg-danger/5 px-4 py-3">
+          <p className="text-sm font-semibold">{t('admin.products.selected', { n: selected.size })}</p>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={() => setSelected(new Set())} className="btn btn-outline btn-sm">
+              {t('admin.products.cancel')}
+            </button>
+            <button type="button" onClick={deleteSelected} disabled={deleting} className="btn btn-danger btn-sm">
+              {deleting ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Trash2 className="size-4" aria-hidden="true" />}
+              {t('admin.products.deleteSelected')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {error ? (
+        <EmptyState title={t('admin.products.loadError')} subtitle={error} action={<button type="button" onClick={load} className="btn btn-primary">{t('admin.products.refresh')}</button>} />
+      ) : !products ? (
         <RowSkeleton rows={7} />
-      ) : filtered.length === 0 ? (
+      ) : products.content.length === 0 ? (
         <EmptyState icon={PackageSearch} title={t('admin.products.empty')} subtitle={t('admin.products.emptySub')} />
       ) : (
         <div className="card overflow-x-auto">
-          <table className="w-full min-w-[920px] text-left text-sm">
+          <table className="w-full min-w-[960px] text-left text-sm">
             <thead>
               <tr className="border-b border-line bg-paper text-xs font-bold uppercase tracking-wider text-muted">
-                <th className="px-5 py-3.5">{t('admin.products.colProduct')}</th>
+                <th className="w-12 px-4 py-3.5">
+                  <input
+                    type="checkbox"
+                    checked={allOnPageSelected()}
+                    onChange={toggleSelectAll}
+                    className="size-4 cursor-pointer accent-[#0f766e]"
+                    aria-label={t('admin.products.selectAll')}
+                  />
+                </th>
+                <th className="px-4 py-3.5">{t('admin.products.colProduct')}</th>
                 <th className="px-4 py-3.5">{t('admin.products.colCategory')}</th>
                 <th className="px-4 py-3.5">{t('admin.products.colPrice')}</th>
                 <th className="px-4 py-3.5">{t('admin.products.colDiscount')}</th>
@@ -137,9 +222,18 @@ export default function AdminProducts() {
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
-              {filtered.map(p => (
+              {products.content.map(p => (
                 <tr key={p.id} className={`transition-colors hover:bg-paper/60 ${p.is_active ? '' : 'opacity-55'}`}>
-                  <td className="px-5 py-3">
+                  <td className="px-4 py-3">
+                    <input
+                      type="checkbox"
+                      checked={selected.has(p.id)}
+                      onChange={() => toggleSelect(p.id)}
+                      className="size-4 cursor-pointer accent-[#0f766e]"
+                      aria-label={`${t('admin.products.selectRow')} ${p.name}`}
+                    />
+                  </td>
+                  <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       <img src={p.image_url} alt="" className="size-11 rounded-lg border border-line object-cover" loading="lazy" />
                       <div className="min-w-0">
@@ -190,6 +284,42 @@ export default function AdminProducts() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {products && products.totalPages > 1 && (
+        <nav className="flex items-center justify-center gap-2" aria-label={t('admin.products.pagination')}>
+          <button
+            type="button"
+            disabled={page === 0}
+            onClick={() => setPage(p => Math.max(0, p - 1))}
+            className="grid size-10 cursor-pointer place-items-center rounded-lg border border-line bg-paper disabled:opacity-35 hover:border-ink"
+            aria-label={t('admin.products.prevPage')}
+          >
+            <ChevronRight className="size-4 rtl:rotate-180" aria-hidden="true" />
+          </button>
+          {Array.from({ length: products.totalPages }, (_, i) => i)
+            .slice(Math.max(0, Math.min(page - 2, products.totalPages - 5)), Math.max(0, Math.min(page - 2, products.totalPages - 5)) + Math.min(products.totalPages, 5))
+            .map(n => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => setPage(n)}
+                className={`size-10 cursor-pointer rounded-lg text-sm font-semibold transition-colors ${n === page ? 'bg-ink text-paper' : 'border border-line bg-paper hover:border-ink'}`}
+                aria-current={n === page ? 'page' : undefined}
+              >
+                {n + 1}
+              </button>
+            ))}
+          <button
+            type="button"
+            disabled={page >= products.totalPages - 1}
+            onClick={() => setPage(p => Math.min(products.totalPages - 1, p + 1))}
+            className="grid size-10 cursor-pointer place-items-center rounded-lg border border-line bg-paper disabled:opacity-35 hover:border-ink"
+            aria-label={t('admin.products.nextPage')}
+          >
+            <ChevronLeft className="size-4 rtl:rotate-180" aria-hidden="true" />
+          </button>
+        </nav>
       )}
 
       {editing && (

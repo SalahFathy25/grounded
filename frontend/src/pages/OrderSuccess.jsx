@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import { useLang } from '../context/LangContext'
 import { orderApi } from '../lib/api'
 import PaymentInfo from '../components/PaymentInfo'
+import EmptyState from '../components/EmptyState'
 
 export default function OrderSuccess() {
   const location = useLocation()
@@ -20,7 +21,7 @@ export default function OrderSuccess() {
     if (location.state?.order) return
     orderApi.get(id)
       .then(o => setOrder(o))
-      .catch(() => setError(t('success.loading')))
+      .catch(err => setError(err.message || t('success.loading')))
       .finally(() => setLoading(false))
   }, [id])
 
@@ -42,9 +43,19 @@ export default function OrderSuccess() {
           </p>
         </div>
 
-        {loading && !order && (
+        {loading && !order && !error && (
           <div className="flex items-center justify-center gap-2 px-6 py-10 text-sm text-muted">
             <Loader2 className="size-4 animate-spin" aria-hidden="true" /> {t('success.loading')}
+          </div>
+        )}
+
+        {error && (
+          <div className="px-6 py-10">
+            <EmptyState
+              title={t('success.loadError')}
+              subtitle={error}
+              action={<Link to="/my-orders" className="btn btn-primary">{t('success.viewOrders')}</Link>}
+            />
           </div>
         )}
 
@@ -80,14 +91,14 @@ export default function OrderSuccess() {
               </div>
               <div className="flex items-center justify-between border-t border-line pt-3">
                 <span className="font-bold">{t('success.total')}</span>
-                <span className="text-xl font-bold">{formatPrice(order.total_amount)}</span>
+                <span className="text-xl font-bold">{formatPrice(order.total_amount + (Number(order.shipping_fee) || 0))}</span>
               </div>
             </dl>
 
             {order.payment_method === 'COD' && (
               <p className="mt-5 flex items-start gap-2.5 rounded-lg bg-gold-tint/70 px-4 py-3 text-sm text-gold-deep">
                 <PackageCheck className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-                {t('success.keepReady', { amount: formatPrice(order.total_amount) })}
+                {t('success.keepReady', { amount: formatPrice(order.total_amount + (Number(order.shipping_fee) || 0)) })}
               </p>
             )}
             {(order.payment_method === 'VODAFONE_CASH' || order.payment_method === 'INSTAPAY') && (

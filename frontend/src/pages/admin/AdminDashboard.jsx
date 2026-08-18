@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { AlertTriangle, ArrowRight, Banknote, Package, RotateCcw, ShoppingCart, Timer, Trash2, Users } from 'lucide-react'
+import { AlertTriangle, ArrowRight, Banknote, Package, ShoppingCart, Timer, Users } from 'lucide-react'
 import { adminApi } from '../../lib/api'
 import { formatPrice, timeAgo } from '../../lib/format'
 import { useLang } from '../../context/LangContext'
-import { useToast } from '../../context/ToastContext'
 import StatusBadge from '../../components/StatusBadge'
 import EmptyState from '../../components/EmptyState'
 import { RowSkeleton } from '../../components/Skeletons'
+import { subscribeRealtime } from '../../lib/realtime'
 
 function StatCard({ icon: Icon, label, value, hint, accent = 'text-gold bg-gold-tint' }) {
   return (
@@ -26,29 +26,17 @@ function StatCard({ icon: Icon, label, value, hint, accent = 'text-gold bg-gold-
 
 export default function AdminDashboard() {
   const { t } = useLang()
-  const toast = useToast()
   const [stats, setStats] = useState(null)
   const [error, setError] = useState('')
-  const [busy, setBusy] = useState(false)
 
   const load = () => adminApi.stats().then(setStats).catch(err => setError(err.message))
 
   useEffect(() => { load() }, [])
 
-  const reset = async scope => {
-    const confirmMsg = scope === 'orders' ? t('admin.reset.clearOrdersConfirm') : t('admin.reset.fullResetConfirm')
-    if (!window.confirm(confirmMsg)) return
-    setBusy(true)
-    try {
-      await adminApi.reset(scope)
-      toast(t('admin.reset.done'), 'success')
-      load()
-    } catch {
-      toast(t('admin.reset.error'), 'error')
-    } finally {
-      setBusy(false)
-    }
-  }
+  useEffect(() => {
+    const unsub = subscribeRealtime(() => load())
+    return unsub
+  }, [])
 
   if (error) {
     return <EmptyState title={t('admin.dash.loadError')} subtitle={error} />
@@ -128,27 +116,6 @@ export default function AdminDashboard() {
           )}
         </section>
       </div>
-
-      {/* Store data */}
-      <section className="card">
-        <header className="flex items-center gap-2.5 border-b border-line px-5 py-4">
-          <span className="grid size-9 place-items-center rounded-lg bg-red-50 text-danger" aria-hidden="true">
-            <RotateCcw className="size-4" />
-          </span>
-          <div>
-            <h2 className="font-bold">{t('admin.dash.storeData')}</h2>
-            <p className="text-xs text-muted">{t('admin.dash.storeDataSub')}</p>
-          </div>
-        </header>
-        <div className="flex flex-wrap items-center gap-3 px-5 py-5">
-          <button type="button" onClick={() => reset('orders')} disabled={busy} className="btn btn-outline">
-            <Trash2 className="size-4" aria-hidden="true" /> {t('admin.reset.clearOrders')}
-          </button>
-          <button type="button" onClick={() => reset('store')} disabled={busy} className="btn btn-outline !text-danger hover:!border-danger/40 hover:!bg-danger/5">
-            <RotateCcw className="size-4" aria-hidden="true" /> {t('admin.reset.fullReset')}
-          </button>
-        </div>
-      </section>
     </div>
   )
 }

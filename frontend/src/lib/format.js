@@ -1,6 +1,19 @@
+let lang = 'en'
+try {
+  lang = localStorage.getItem('grounded_lang') === 'en' ? 'en' : 'ar'
+} catch { /* ignore */ }
+
+export function setFormatLang(l) {
+  lang = l === 'ar' ? 'ar' : 'en'
+}
+
 export function formatPrice(value) {
   if (value == null || Number.isNaN(Number(value))) return '—'
-  return `${Number(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} EGP`
+  const n = Number(value)
+  if (lang === 'ar') {
+    return `${n.toLocaleString('ar-EG-u-nu-latn', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ج.م`
+  }
+  return `${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} EGP`
 }
 
 export function catName(c, lang) {
@@ -26,18 +39,31 @@ export function formatDate(iso) {
   if (!iso) return '—'
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return '—'
+  if (lang === 'ar') {
+    return d.toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' })
+  }
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+function arDuration(n, unit) {
+  const one = unit === 'h' ? 'ساعة' : 'دقيقة'
+  const two = unit === 'h' ? 'ساعتين' : 'دقيقتين'
+  const few = unit === 'h' ? 'ساعات' : 'دقائق'
+  if (n === 1) return `منذ ${one}`
+  if (n === 2) return `منذ ${two}`
+  if (n <= 10) return `منذ ${n} ${few}`
+  return `منذ ${n} ${one}`
 }
 
 export function timeAgo(iso) {
   if (!iso) return ''
   const d = new Date(iso)
   const s = Math.floor((Date.now() - d.getTime()) / 1000)
-  if (s < 60) return 'just now'
+  if (s < 60) return lang === 'ar' ? 'الآن' : 'just now'
   const m = Math.floor(s / 60)
-  if (m < 60) return `${m}m ago`
+  if (m < 60) return lang === 'ar' ? arDuration(m, 'm') : `${m}m ago`
   const h = Math.floor(m / 60)
-  if (h < 24) return `${h}h ago`
+  if (h < 24) return lang === 'ar' ? arDuration(h, 'h') : `${h}h ago`
   return formatDate(iso)
 }
 

@@ -2,7 +2,7 @@
 
 /* End-to-end smoke test for the Node backend — verifies the API contract
    mirrors the original Spring Boot backend exactly. Requires the server
-   to be running on PORT (default 8080). */
+   to be running on PORT (default 8080) against a FRESH SQLite database. */
 
 const BASE = process.env.TEST_BASE_URL || 'http://localhost:8080/api/v1'
 
@@ -96,6 +96,13 @@ async function run() {
   ok(missing.data && missing.data.timestamp && missing.data.status === 404 && missing.data.path === '/api/v1/products/99999',
     'error body shape {timestamp,status,message,path}')
 
+  const badId = await req('GET', '/products/abc')
+  ok(badId.status === 400, 'non-numeric product id → 400')
+  const negId = await req('GET', '/products/-1')
+  ok(negId.status === 400, 'negative product id → 400')
+  const badPage = await req('GET', '/products?size=-5')
+  ok(badPage.status === 200 && badPage.data && badPage.data.size >= 1, 'negative size clamped')
+
   console.log('\n=== security ===')
 
   const noToken = await req('POST', '/products', { body: { name: 'x' } })
@@ -119,13 +126,13 @@ async function run() {
   const blankName = await req('POST', '/auth/register', { body: { full_name: '  ', email: 'x2@y.com', password: 'secret1' } })
   ok(blankName.status === 400 && blankName.data.message === 'full_name: must not be blank', 'blank name → 400')
 
-  const customerLogin = await req('POST', '/auth/login', { body: { email: 'customer@grounded.store', password: 'demo1234' } })
+  const customerLogin = await req('POST', '/auth/login', { body: { email: 'salah@grounded.com', password: 'salah123' } })
   ok(customerLogin.status === 200, 'customer login → 200')
   ok(customerLogin.data && customerLogin.data.user.role === 'ROLE_CUSTOMER', 'customer role')
-  const badLogin = await req('POST', '/auth/login', { body: { email: 'customer@grounded.store', password: 'wrong' } })
+  const badLogin = await req('POST', '/auth/login', { body: { email: 'salah@grounded.com', password: 'wrong' } })
   ok(badLogin.status === 401 && badLogin.data.message === 'Invalid email or password', 'bad login → 401')
 
-  const adminLogin = await req('POST', '/auth/login', { body: { email: 'admin@grounded.store', password: 'admin123' } })
+  const adminLogin = await req('POST', '/auth/login', { body: { email: 'admin@grounded.com', password: 'admin123' } })
   ok(adminLogin.status === 200, 'admin login → 200')
   ok(adminLogin.data && adminLogin.data.user.role === 'ROLE_ADMIN', 'admin role')
 
@@ -177,6 +184,25 @@ async function run() {
   })
   ok(emptyItems.status === 400 && emptyItems.data.message === 'Order must contain at least one item', 'empty items → 400')
 
+  const dupItems = await req('POST', '/orders', {
+    token: customerToken,
+    body: {
+      shipping_address: '1 Test St', phone_number: '+20 1', payment_method: 'COD',
+      items: [{ product_id: 2, quantity: 1 }, { product_id: 2, quantity: 1 }],
+    },
+  })
+  ok(dupItems.status === 400, 'duplicate product in one order → 400')
+
+  const visaOrder = await req('POST', '/orders', {
+    token: customerToken,
+    body: {
+      shipping_address: '1 Test St, Cairo', phone_number: '+20 111 111 1111',
+      payment_method: 'VISA', items: [{ product_id: 2, quantity: 2 }],
+    },
+  })
+  ok(visaOrder.status === 201 && visaOrder.data.payment_method === 'VISA', 'create VISA order')
+  const visaOrderId = visaOrder.data && visaOrder.data.id
+
   const discountOrder = await req('POST', '/orders', {
     token: customerToken,
     body: {
@@ -197,11 +223,28 @@ async function run() {
   const customerCannotList = await req('GET', '/orders', { token: customerToken })
   ok(customerCannotList.status === 403 && customerCannotList.data.message === 'Admin access required', 'customer GET /orders → 403')
 
+  const slashBypass = await req('GET', '/orders/', { token: customerToken })
+  ok(slashBypass.status === 403, 'trailing-slash orders listing blocked for customer')
+
+  // Case-variant requests must hit the FULL absolute path (no /api/v1 prefix
+  // from BASE) so the URL keeps its uppercase letters.
+  const caseRes = await fetch('http://localhost:8080/API/V1/ADMIN/STATS', {
+    headers: { Authorization: `Bearer ${customerToken}` },
+  })
+  ok(caseRes.status === 403, 'case-variant admin path blocked for customer')
+  const caseOrders = await fetch('http://localhost:8080/API/V1/ORDERS', {
+    headers: { Authorization: `Bearer ${customerToken}` },
+  })
+  ok(caseOrders.status === 403, 'case-variant orders listing blocked for customer')
+
   const customerCannotSetStatus = await req('PATCH', `/orders/${orderId}/status`, { token: customerToken, body: { status: 'SHIPPED' } })
   ok(customerCannotSetStatus.status === 403, 'customer PATCH status → 403')
 
-  const payOwn = await req('POST', `/orders/${orderId}/pay`, { token: customerToken })
-  ok(payOwn.status === 200 && payOwn.data.status === 'PAID' && payOwn.data.paid_at, 'customer pays own order → PAID')
+  const payCod = await req('POST', `/orders/${orderId}/pay`, { token: customerToken })
+  ok(payCod.status === 400 && payCod.data.message === 'COD orders are paid on delivery', 'COD cannot be self-paid → 400')
+
+  const payOwn = await req('POST', `/orders/${visaOrderId}/pay`, { token: customerToken })
+  ok(payOwn.status === 200 && payOwn.data.status === 'PAID' && payOwn.data.paid_at, 'customer pays own VISA order → PAID')
   ok(payOwn.data.status_history.some(h => h.status === 'PAID'), 'history has PAID')
 
   const canceledPay = await req('POST', '/orders/4/pay', { token: customerToken })
@@ -209,6 +252,9 @@ async function run() {
 
   const badProof = await req('PATCH', `/orders/${orderId}/proof`, { token: customerToken, body: { proof: 'http://x.png' } })
   ok(badProof.status === 400 && badProof.data.message === 'Invalid proof image', 'bad proof → 400')
+
+  const svgProof = await req('PATCH', `/orders/${orderId}/proof`, { token: customerToken, body: { proof: 'data:image/svg+xml;base64,AAAA' } })
+  ok(svgProof.status === 400, 'svg proof rejected → 400')
 
   const goodProof = await req('PATCH', `/orders/${orderId}/proof`, { token: customerToken, body: { proof: 'data:image/jpeg;base64,AAAA' } })
   ok(goodProof.status === 200 && goodProof.data.payment_proof === 'data:image/jpeg;base64,AAAA', 'good proof saved')
@@ -222,28 +268,65 @@ async function run() {
 
   const stats = await req('GET', '/admin/stats', { token: adminToken })
   ok(stats.status === 200, 'admin stats → 200')
-  // seeded orders: 748 + 1198 (Baggy Cargo has NO discount in seed — mirrors Spring) + 803.25 (CANCELLED 1098 excluded)
-  const expectedRevenue = 748 + 1198 + 803.25 + order.data.total_amount + discountOrder.data.total_amount
-  ok(Math.abs(stats.data.revenue - expectedRevenue) < 0.01, `revenue = ${expectedRevenue}`, stats.data.revenue)
-  ok(stats.data.orders_count === 6, 'orders_count = 6', stats.data.orders_count)
-  ok(stats.data.customers_count === 3, 'customers_count = 3 (admin+customer+test)', stats.data.customers_count)
+  // revenue counts ONLY paid statuses: seeded SHIPPED 1198 + DELIVERED 803.25 + paid VISA 598
+  const expectedRevenue = 1198 + 803.25 + 598
+  ok(Math.abs(stats.data.revenue - expectedRevenue) < 0.01, `revenue = ${expectedRevenue} (paid only)`, stats.data.revenue)
+  ok(stats.data.orders_count === 7, 'orders_count = 7', stats.data.orders_count)
+  ok(stats.data.customers_count === 2, 'customers_count = 2 (customers only)', stats.data.customers_count)
   ok(stats.data.products_count === 12, 'products_count = 12', stats.data.products_count)
-  ok(stats.data.pending_orders === 2, 'pending_orders = 2 (seeded pending + discount order)', stats.data.pending_orders)
+  ok(stats.data.pending_orders === 3, 'pending_orders = 3 (seeded pending + COD + discount)', stats.data.pending_orders)
   ok(Array.isArray(stats.data.low_stock_products) && stats.data.low_stock_count === stats.data.low_stock_products.length, 'low stock products')
   ok(stats.data.recent_orders.length <= 5, 'recent orders ≤ 5')
   ok(stats.data.orders_by_status && stats.data.orders_by_status.PAID >= 1, 'orders_by_status map')
 
   const allOrders = await req('GET', '/orders', { token: adminToken })
-  ok(allOrders.status === 200 && allOrders.data.length === 6, 'admin sees all orders')
+  ok(allOrders.status === 200 && allOrders.data.content.length === 7 && allOrders.data.totalElements === 7,
+    'admin orders paged (7 on page 1)', allOrders.data && allOrders.data.totalElements)
+  const pendingOnly = await req('GET', '/orders?status=PENDING', { token: adminToken })
+  ok(pendingOnly.data && pendingOnly.data.totalElements === 3, 'admin orders filtered by status')
 
-  const setShipped = await req('PATCH', `/orders/${orderId}/status`, { token: adminToken, body: { status: 'SHIPPED' } })
-  ok(setShipped.status === 200 && setShipped.data.status === 'SHIPPED' && setShipped.data.paid_at === null,
-    'admin sets SHIPPED (paid_at cleared)', setShipped.data.paid_at)
+  const skipTransition = await req('PATCH', `/orders/${orderId}/status`, { token: adminToken, body: { status: 'DELIVERED' } })
+  ok(skipTransition.status === 400, 'PENDING → DELIVERED rejected')
+  const invalidStatus = await req('PATCH', `/orders/${orderId}/status`, { token: adminToken, body: { status: 'REFUNDED' } })
+  ok(invalidStatus.status === 400, 'unknown status rejected')
+
+  const setShipped = await req('PATCH', `/orders/${visaOrderId}/status`, { token: adminToken, body: { status: 'SHIPPED' } })
+  ok(setShipped.status === 200 && setShipped.data.status === 'SHIPPED' && setShipped.data.paid_at !== null,
+    'admin ships paid order (paid_at retained)', setShipped.data.paid_at)
+
+  const setDelivered = await req('PATCH', `/orders/${visaOrderId}/status`, { token: adminToken, body: { status: 'DELIVERED' } })
+  ok(setDelivered.status === 200 && setDelivered.data.status === 'DELIVERED', 'admin marks DELIVERED')
 
   const restoreStock = await req('PATCH', `/orders/${orderId}/status`, { token: adminToken, body: { status: 'CANCELLED' } })
   ok(restoreStock.status === 200 && restoreStock.data.status === 'CANCELLED', 'cancel order')
+  // 95 - 2 (COD order) - 2 (VISA order, still delivered) + 2 (cancelled COD) = 93
   const stockRestored = await req('GET', '/products/2')
-  ok(stockRestored.data.stock_quantity === 95, 'stock restored 93+2=95', stockRestored.data.stock_quantity)
+  ok(stockRestored.data.stock_quantity === 93, 'stock restored after cancel (95-2 visa-2 cod+2=93)', stockRestored.data.stock_quantity)
+
+  const reactivate = await req('PATCH', `/orders/${orderId}/status`, { token: adminToken, body: { status: 'PENDING' } })
+  ok(reactivate.status === 400, 'CANCELLED → PENDING rejected (no stock inflation)')
+
+  const deliverCancel = await req('PATCH', `/orders/${visaOrderId}/status`, { token: adminToken, body: { status: 'CANCELLED' } })
+  ok(deliverCancel.status === 400, 'DELIVERED → CANCELLED rejected')
+
+  const idemBody = {
+    shipping_address: '1 Test St, Cairo', phone_number: '+20 111 111 1111',
+    payment_method: 'COD', idempotency_key: 'smoke-idem-001',
+    items: [{ product_id: 2, quantity: 1 }],
+  }
+  const idemFirst = await req('POST', '/orders', { token: customerToken, body: idemBody })
+  ok(idemFirst.status === 201, 'order with idempotency key → 201')
+  const idemReplay = await req('POST', '/orders', { token: customerToken, body: idemBody })
+  ok(idemReplay.status === 200 && idemReplay.data.id === idemFirst.data.id, 'same key replay → same order', idemReplay.data && idemReplay.data.id)
+  const stockAfterReplay = await req('GET', '/products/2')
+  ok(stockAfterReplay.data.stock_quantity === 92, 'stock decremented once for replay (93→92)', stockAfterReplay.data.stock_quantity)
+  const badIdemKey = await req('POST', '/orders', {
+    token: customerToken,
+    body: { shipping_address: '1 Test St', phone_number: '+20 1', payment_method: 'COD', idempotency_key: 'غير صالح!!', items: [{ product_id: 2, quantity: 1 }] },
+  })
+  ok(badIdemKey.status === 400, 'invalid idempotency key format → 400')
+  const cancelIdem = await req('PATCH', `/orders/${idemFirst.data.id}/status`, { token: adminToken, body: { status: 'CANCELLED' } })
+  ok(cancelIdem.status === 200, 'cancel idempotent order (restores stock)')
 
   const hideProduct = await req('DELETE', '/products/1', { token: adminToken })
   ok(hideProduct.status === 200 && hideProduct.data.is_active === false, 'soft delete toggles is_active=false')
@@ -266,6 +349,11 @@ async function run() {
   ok(createProduct.data.sku === 'GR-013', 'auto sku GR-013', createProduct.data.sku)
   ok(createProduct.data.sale_price === 450, 'sale price 450', createProduct.data.sale_price)
   ok(JSON.stringify(createProduct.data.images) === JSON.stringify(['a.jpg', 'b.jpg']), 'images cleaned+deduped')
+  const negPrice = await req('POST', '/products', {
+    token: adminToken,
+    body: { name: 'Bad Price', price: -5, stock_quantity: 1 },
+  })
+  ok(negPrice.status === 400, 'negative price rejected → 400')
   const updateProduct = await req('PUT', '/products/13', { token: adminToken, body: { price: 600, discount_percent: 50 } })
   ok(updateProduct.status === 200 && updateProduct.data.sale_price === 300 && updateProduct.data.name === 'Test Hoodie',
     'update product price/discount')
@@ -278,7 +366,7 @@ async function run() {
   const catInUse = await req('DELETE', '/categories/1', { token: adminToken })
   ok(catInUse.status === 409 && catInUse.data.message === 'Cannot delete a category that still has products', 'delete used category → 409')
   const delCat = await req('DELETE', `/categories/${createCat.data.id}`, { token: adminToken })
-  ok(delCat.status === 200, 'delete empty category → 200')
+  ok(delCat.status === 204, 'delete empty category → 204')
 
   const adminSettings = await req('GET', '/admin/settings', { token: adminToken })
   ok(adminSettings.status === 200, 'admin get settings')
@@ -289,6 +377,8 @@ async function run() {
   ok(updSettings.data.shipping_fee === 100, 'settings shipping_fee updated')
   ok(updSettings.data.store_name_en === 'Grounded HQ', 'settings store name updated')
   ok(updSettings.data.announcement_enabled === true, 'settings announcement_enabled updated')
+  const negShipping = await req('PUT', '/admin/settings', { token: adminToken, body: { shipping_fee: -50 } })
+  ok(negShipping.status === 400, 'negative shipping fee rejected → 400')
   const pubSettingsAfter = await req('GET', '/settings')
   ok(pubSettingsAfter.data.shipping_fee === 100, 'public settings reflect update')
   await req('PUT', '/admin/settings', { token: adminToken, body: { shipping_fee: 80, store_name_en: 'Grounded', announcement_enabled: false } })
@@ -304,8 +394,10 @@ async function run() {
   const pubContent = await req('GET', '/content')
   ok(pubContent.data.hero.title1.en === 'New Title', 'public content reflects update')
 
-  const checkout = await req('POST', '/payments/checkout', { token: customerToken, body: { order_id: orderId, amount: 100 } })
-  ok(checkout.status === 200 && checkout.data.gateway === 'paymob' && checkout.data.url === `/mock-gateway?order=${orderId}`, 'checkout stub')
+  const wrongCheckout = await req('POST', '/payments/checkout', { token: customerToken, body: { order_id: orderId, amount: 1 } })
+  ok(wrongCheckout.status === 400, 'checkout with wrong amount → 400')
+  const checkout = await req('POST', '/payments/checkout', { token: customerToken, body: { order_id: orderId, amount: 678 } })
+  ok(checkout.status === 200 && checkout.data.gateway === 'paymob' && checkout.data.amount === 678, 'checkout amount = items + shipping', checkout.data && checkout.data.amount)
   const webhook = await req('POST', '/payments/webhook', { body: { order_ref: 123 } })
   ok(webhook.status === 200 && webhook.data.received === true && webhook.data.order_ref === 123, 'public webhook')
 
@@ -320,10 +412,10 @@ async function run() {
   const resetStore = await req('POST', '/admin/reset', { token: adminToken, body: { scope: 'store' } })
   ok(resetStore.status === 200 && resetStore.data.message === 'Store data reset', 'reset store')
   const afterReset = await req('GET', '/admin/stats', { token: adminToken })
-  ok(afterReset.data.orders_count === 4 && afterReset.data.products_count === 12 && afterReset.data.customers_count === 2,
-    'store reseeded (4 orders, 12 products, 2 users)', afterReset.data)
+  ok(afterReset.data.orders_count === 4 && afterReset.data.products_count === 12 && afterReset.data.customers_count === 1,
+    'store reseeded (4 orders, 12 products, 1 customer)', afterReset.data)
 
-  const newLogin = await req('POST', '/auth/login', { body: { email: 'admin@grounded.store', password: 'admin123' } })
+  const newLogin = await req('POST', '/auth/login', { body: { email: 'admin@grounded.com', password: 'admin123' } })
   ok(newLogin.status === 200, 'admin can log in again after reseed')
   const settingsReset = await req('GET', '/settings')
   ok(settingsReset.data.shipping_fee === 80, 'settings reset to defaults after store reset')

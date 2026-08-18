@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { settingsApi } from '../lib/api'
 
 const SettingsContext = createContext(null)
@@ -32,7 +32,13 @@ export function SettingsProvider({ children }) {
     return () => { cancelled = true }
   }, [])
 
-  const value = useMemo(() => ({ settings, setSettings, loading }), [settings, loading])
+  const refresh = useCallback(() => {
+    settingsApi.get()
+      .then(s => setSettings({ ...DEFAULTS, ...s }))
+      .catch(() => {})
+  }, [])
+
+  const value = useMemo(() => ({ settings, setSettings, loading, refresh }), [settings, loading, refresh])
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>
 }

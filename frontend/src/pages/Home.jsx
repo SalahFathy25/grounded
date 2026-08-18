@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowRight, ChevronDown, Headset, Lightbulb, Phone, Quote, ShieldCheck, Sparkles, Star, Truck } from 'lucide-react'
+import { ArrowRight, ChevronDown, Headset, Lightbulb, Phone, Quote, RefreshCw, ShieldCheck, Sparkles, Star, Truck } from 'lucide-react'
 import { categoryApi, productApi } from '../lib/api'
 import ProductCard from '../components/ProductCard'
 import Reveal from '../components/Reveal'
+import EmptyState from '../components/EmptyState'
 import { ProductGridSkeleton } from '../components/Skeletons'
 import { useLang } from '../context/LangContext'
 import { useContent, pick } from '../context/ContentContext'
+import { useSettings } from '../context/SettingsContext'
+import { subscribeStoreEvents } from '../lib/realtime'
 import { catName, formatPrice, salePrice } from '../lib/format'
 
 const CHIP_ICONS = { truck: Truck, phone: Phone, shield: ShieldCheck, headset: Headset }
@@ -14,16 +17,31 @@ const CHIP_ICONS = { truck: Truck, phone: Phone, shield: ShieldCheck, headset: H
 export default function Home() {
   const navigate = useNavigate()
   const { t, lang } = useLang()
-  const { content } = useContent()
+  const { content, refresh: refreshContent } = useContent()
+  const { refresh: refreshSettings } = useSettings()
   const [categories, setCategories] = useState([])
   const [featured, setFeatured] = useState(null)
   const [spotlight, setSpotlight] = useState(null)
+  const [featuredError, setFeaturedError] = useState('')
+  const [spotlightError, setSpotlightError] = useState('')
+  const [categoriesError, setCategoriesError] = useState('')
 
-  useEffect(() => {
-    categoryApi.list().then(setCategories).catch(() => {})
-    productApi.list({ size: 8 }).then(setFeatured).catch(() => {})
-    productApi.list({ size: 12 }).then(setSpotlight).catch(() => {})
-  }, [])
+  const loadHome = () => {
+    setFeaturedError('')
+    setSpotlightError('')
+    setCategoriesError('')
+    categoryApi.list().then(setCategories).catch(err => setCategoriesError(err.message || t('home.loadError')))
+    productApi.list({ size: 8 }).then(setFeatured).catch(err => setFeaturedError(err.message || t('home.loadError')))
+    productApi.list({ size: 12 }).then(setSpotlight).catch(err => setSpotlightError(err.message || t('home.loadError')))
+  }
+
+  useEffect(loadHome, [])
+
+  useEffect(() => subscribeStoreEvents(() => {
+    loadHome()
+    refreshContent()
+    refreshSettings()
+  }), [loadHome, refreshContent, refreshSettings])
 
   const hero = content.hero
   const heroFloats = hero.chips.map((c, i) => ({
@@ -70,7 +88,7 @@ export default function Home() {
       {/* ============ HERO ============ */}
       <section className="relative overflow-hidden bg-ink text-paper">
         <img
-          src="/hero.jpg"
+          src={hero.image || '/hero.jpg'}
           alt=""
           loading="eager"
           className="absolute inset-0 h-full w-full object-cover object-[center_30%]"
@@ -174,7 +192,7 @@ export default function Home() {
       </section>
 
       {/* ============ CATEGORIES ============ */}
-      {S.categories && (
+      {S.categories && (categories.length > 0 || categoriesError) && (
         <section id="categories" className="mx-auto max-w-7xl px-4 pt-16 sm:pt-20">
           <Reveal>
             <div className="mb-7 flex items-end justify-between gap-4">
@@ -187,35 +205,43 @@ export default function Home() {
               </Link>
             </div>
           </Reveal>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-            {categories.map((c, i) => (
-              <Reveal key={c.id} delay={i * 70}>
-                <Link
-                  to={`/products?category=${c.id}`}
-                  className="group relative block aspect-[4/3] overflow-hidden rounded-2xl ring-1 ring-black/5 transition-shadow duration-300 hover:shadow-pop"
-                >
-                  <img
-                    src={c.image_url}
-                    alt={catName(c, lang)}
-                    loading="lazy"
-                    className="size-full scale-100 object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-ink/85 via-ink/25 to-transparent" aria-hidden="true" />
-                  <div className="absolute inset-x-0 bottom-0 p-4">
-                    <p className="font-display text-lg uppercase tracking-wide text-paper">{catName(c, lang)}</p>
-                    <p className="text-xs text-paper/60 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                      {c.product_count ?? 0} {t('home.products')}
-                    </p>
-                  </div>
-                </Link>
-              </Reveal>
-            ))}
-          </div>
+          {categoriesError && categories.length === 0 ? (
+            <EmptyState
+              title={t('home.loadError')}
+              subtitle={categoriesError}
+              action={<button type="button" onClick={loadHome} className="btn btn-primary">{t('home.retry')}</button>}
+            />
+          ) : (
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+              {categories.map((c, i) => (
+                <Reveal key={c.id} delay={i * 70}>
+                  <Link
+                    to={`/products?category=${c.id}`}
+                    className="group relative block aspect-[4/3] overflow-hidden rounded-2xl ring-1 ring-black/5 transition-shadow duration-300 hover:shadow-pop"
+                  >
+                    <img
+                      src={c.image_url}
+                      alt={catName(c, lang)}
+                      loading="lazy"
+                      className="size-full scale-100 object-cover transition-transform duration-500 group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-ink/85 via-ink/25 to-transparent" aria-hidden="true" />
+                    <div className="absolute inset-x-0 bottom-0 p-4">
+                      <p className="font-display text-lg uppercase tracking-wide text-paper">{catName(c, lang)}</p>
+                      <p className="text-xs text-paper/60 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                        {c.product_count ?? 0} {t('home.products')}
+                      </p>
+                    </div>
+                  </Link>
+                </Reveal>
+              ))}
+            </div>
+          )}
         </section>
       )}
 
       {/* ============ FEATURED ============ */}
-      {S.featured && (
+      {S.featured && (!featured || featuredError || featured.content.length > 0) && (
         <section className="mx-auto max-w-7xl px-4 pt-16 sm:pt-20">
           <Reveal>
             <div className="mb-7 flex items-end justify-between gap-4">
@@ -236,6 +262,12 @@ export default function Home() {
                 </Reveal>
               ))}
             </div>
+          ) : featuredError ? (
+            <EmptyState
+              title={t('home.loadError')}
+              subtitle={featuredError}
+              action={<button type="button" onClick={loadHome} className="btn btn-primary">{t('home.retry')}</button>}
+            />
           ) : (
             <ProductGridSkeleton count={8} />
           )}
@@ -243,6 +275,15 @@ export default function Home() {
       )}
 
       {/* ============ CATEGORY SPOTLIGHT ============ */}
+      {S.spotlight && spotlightError && !spotlight?.content?.length && (
+        <section className="mx-auto max-w-7xl px-4 pt-16 sm:pt-20">
+          <EmptyState
+            title={t('home.loadError')}
+            subtitle={spotlightError}
+            action={<button type="button" onClick={loadHome} className="btn btn-primary">{t('home.retry')}</button>}
+          />
+        </section>
+      )}
       {S.spotlight && spotlight?.content?.length > 0 && (
         <section className="mx-auto max-w-7xl px-4 pt-16 sm:pt-20">
           <Reveal>

@@ -27,7 +27,7 @@ export default function Login() {
       const user = await login(email, password)
       toast.push(t('login.welcomeBack', { name: user.full_name.split(' ')[0] }))
       const from = location.state?.from
-      navigate(from && from.startsWith('/') ? from : user.role === 'ROLE_ADMIN' ? '/admin' : '/')
+      navigate(from && from.startsWith('/') ? from : ['ROLE_ADMIN', 'ROLE_SUPER_ADMIN'].includes(user.role) ? '/admin' : '/')
     } catch (err) {
       setError(err.message)
     } finally {

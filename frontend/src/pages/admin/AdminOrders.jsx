@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { CheckCircle2, ChevronDown, ImageUp, Loader2, MapPin, Phone, ShoppingBag, X } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, ImageUp, Loader2, MapPin, Phone, ShoppingBag, Trash2, X } from 'lucide-react'
 import { orderApi } from '../../lib/api'
 import { formatDate, formatPrice, timeAgo } from '../../lib/format'
 import { useLang } from '../../context/LangContext'
@@ -8,8 +8,10 @@ import StatusBadge from '../../components/StatusBadge'
 import PaymentInfo from '../../components/PaymentInfo'
 import EmptyState from '../../components/EmptyState'
 import { RowSkeleton } from '../../components/Skeletons'
+import { subscribeRealtime } from '../../lib/realtime'
 
 const FILTERS = ['ALL', 'PENDING', 'PAID', 'SHIPPED', 'DELIVERED', 'CANCELLED']
+const PAGE_SIZE = 10
 const NEXT_STATUS = {
   PENDING: ['SHIPPED'],
   PAID: ['SHIPPED'],
@@ -21,27 +23,75 @@ const NEXT_STATUS = {
 export default function AdminOrders() {
   const toast = useToast()
   const { t } = useLang()
-  const [orders, setOrders] = useState(null)
+  const [data, setData] = useState(null)
   const [filter, setFilter] = useState('ALL')
+  const [page, setPage] = useState(0)
   const [expanded, setExpanded] = useState(new Set())
   const [updating, setUpdating] = useState(null)
   const [error, setError] = useState('')
   const [proofOrder, setProofOrder] = useState(null)
+  const [counts, setCounts] = useState({ ALL: 0 })
+  const [selected, setSelected] = useState(new Set())
+  const [deleting, setDeleting] = useState(false)
+
+  const query = useMemo(() => {
+    const q = { page, size: PAGE_SIZE }
+    if (filter !== 'ALL') q.status = filter
+    return q
+  }, [filter, page])
+
+  const load = useCallback(() => {
+    setError('')
+    orderApi.all(query)
+      .then(res => {
+        setData(res)
+        setCounts(prev => ({ ...prev, [filter]: res.totalElements }))
+      })
+      .catch(err => setError(err.message))
+  }, [query, filter])
+
+  useEffect(() => { load() }, [load])
 
   useEffect(() => {
-    orderApi.all().then(setOrders).catch(err => setError(err.message))
+    if (data && data.totalPages > 0 && page >= data.totalPages && page !== data.totalPages - 1) {
+      setPage(data.totalPages - 1)
+    }
+  }, [data, page])
+
+  const refreshCounts = useCallback(() => {
+    Promise.all(FILTERS.map(status =>
+      orderApi.all(status === 'ALL' ? { size: 1 } : { status, size: 1 })
+        .then(res => ({ status, total: res.totalElements }))
+        .catch(() => null),
+    )).then(list => {
+      const c = { ALL: 0 }
+      for (const item of list) if (item) c[item.status] = item.total
+      setCounts(c)
+    })
   }, [])
 
-  const filtered = useMemo(
-    () => (orders || []).filter(o => filter === 'ALL' || o.status === filter),
-    [orders, filter]
-  )
+  useEffect(() => {
+    let cancelled = false
+    Promise.all(FILTERS.map(status =>
+      orderApi.all(status === 'ALL' ? { size: 1 } : { status, size: 1 })
+        .then(res => ({ status, total: res.totalElements }))
+        .catch(() => null),
+    )).then(list => {
+      if (cancelled) return
+      const c = { ALL: 0 }
+      for (const item of list) if (item) c[item.status] = item.total
+      setCounts(c)
+    })
+    return () => { cancelled = true }
+  }, [])
 
-  const counts = useMemo(() => {
-    const c = { ALL: orders?.length || 0 }
-    for (const s of FILTERS.slice(1)) c[s] = orders?.filter(o => o.status === s).length || 0
-    return c
-  }, [orders])
+  useEffect(() => {
+    const unsub = subscribeRealtime(() => {
+      load()
+      refreshCounts()
+    })
+    return unsub
+  }, [load, refreshCounts])
 
   const toggleExpand = id => {
     setExpanded(prev => {
@@ -55,8 +105,8 @@ export default function AdminOrders() {
     setUpdating(order.id)
     try {
       await orderApi.setStatus(order.id, status)
-      setOrders(orders.map(o => o.id === order.id ? { ...o, status } : o))
       toast.push(t('admin.orders.updatedToast', { id: order.id, status }))
+      load()
     } catch (err) {
       toast.push(err.message, 'error')
     } finally {
@@ -64,14 +114,64 @@ export default function AdminOrders() {
     }
   }
 
+  const switchFilter = f => {
+    setFilter(f)
+    setPage(0)
+    setSelected(new Set())
+  }
+
+  const toggleSelect = id => {
+    setSelected(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  const deleteSelected = async () => {
+    const ids = [...selected]
+    if (ids.length === 0) return
+    if (!window.confirm(t('admin.orders.deleteConfirm', { n: ids.length }))) return
+    setDeleting(true)
+    try {
+      const res = await orderApi.deleteMany(ids)
+      toast.push(t('admin.orders.deletedToast', { n: res.deleted }))
+      setSelected(new Set())
+      load()
+      refreshCounts()
+    } catch (err) {
+      toast.push(err.message, 'error')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  const deleteAll = async () => {
+    if (!window.confirm(t('admin.orders.deleteAllConfirm'))) return
+    setDeleting(true)
+    try {
+      const res = await orderApi.deleteAll()
+      toast.push(t('admin.orders.deletedToast', { n: res.deleted }))
+      setSelected(new Set())
+      load()
+      refreshCounts()
+    } catch (err) {
+      toast.push(err.message, 'error')
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   if (error) return <EmptyState title={t('admin.orders.loadError')} subtitle={error} />
-  if (!orders) return <RowSkeleton rows={6} />
+  if (!data) return <RowSkeleton rows={6} />
+
+  const orders = data.content || []
 
   return (
     <div className="space-y-6">
       <header>
         <h1 className="text-2xl font-bold tracking-tight">{t('admin.orders.title')}</h1>
-        <p className="mt-1 text-sm text-muted">{t('admin.orders.total', { n: orders.length })}</p>
+        <p className="mt-1 text-sm text-muted">{t('admin.orders.total', { n: data.totalElements })}</p>
       </header>
 
       <div className="flex flex-wrap gap-2" role="tablist" aria-label={t('admin.orders.title')}>
@@ -79,25 +179,58 @@ export default function AdminOrders() {
           <button
             key={f}
             type="button"
-            onClick={() => setFilter(f)}
+            onClick={() => switchFilter(f)}
             className={`chip cursor-pointer px-3.5 py-2 transition-colors ${filter === f ? 'bg-ink text-paper' : 'bg-paper text-ink-soft ring-1 ring-line hover:bg-ink/5'}`}
             aria-pressed={filter === f}
           >
-            {f} <span className="opacity-60">({counts[f]})</span>
+            {f} <span className="opacity-60">({counts[f] ?? 0})</span>
           </button>
         ))}
       </div>
 
-      {filtered.length === 0 ? (
+      {selected.size > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-danger/30 bg-danger/5 px-4 py-3">
+          <p className="text-sm font-semibold">{t('admin.orders.selected', { n: selected.size })}</p>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={() => setSelected(new Set())} className="btn btn-outline btn-sm">
+              {t('admin.orders.close')}
+            </button>
+            <button type="button" onClick={deleteSelected} disabled={deleting} className="btn btn-danger btn-sm">
+              {deleting ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Trash2 className="size-4" aria-hidden="true" />}
+              {t('admin.orders.deleteSelected')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs text-muted">{t('admin.orders.bulkHint')}</p>
+        <button type="button" onClick={deleteAll} disabled={deleting} className="btn btn-outline btn-sm !text-danger hover:!border-danger/40 hover:!bg-danger/5">
+          {deleting ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Trash2 className="size-4" aria-hidden="true" />}
+          {t('admin.orders.deleteAll')}
+        </button>
+      </div>
+
+      {orders.length === 0 ? (
         <EmptyState icon={ShoppingBag} title={t('admin.orders.noOrders', { filter: filter === 'ALL' ? '' : filter })} subtitle={t('admin.orders.noOrdersSub')} />
       ) : (
         <ul className="space-y-4">
-          {filtered.map(o => {
+          {orders.map(o => {
             const isOpen = expanded.has(o.id)
             const next = NEXT_STATUS[o.status] || []
             const up = updating === o.id
+            const total = o.total_amount + (Number(o.shipping_fee) || 0)
             return (
               <li key={o.id} className="card overflow-hidden">
+                <div className="flex items-center gap-1 border-b border-line bg-paper/50 ps-4 pe-5 pt-3">
+                  <input
+                    type="checkbox"
+                    checked={selected.has(o.id)}
+                    onChange={() => toggleSelect(o.id)}
+                    className="size-4 cursor-pointer accent-[#0f766e]"
+                    aria-label={`${t('admin.orders.selectRow')} #${o.id}`}
+                  />
+                </div>
                 <button
                   type="button"
                   onClick={() => toggleExpand(o.id)}
@@ -110,7 +243,7 @@ export default function AdminOrders() {
                     <span className="truncate text-xs text-muted">{o.user_email}</span>
                   </span>
                   <span className="text-sm text-muted">{timeAgo(o.created_at)}</span>
-                  <span className="font-bold">{formatPrice(o.total_amount)}</span>
+                  <span className="font-bold">{formatPrice(total)}</span>
                   <StatusBadge status={o.status} />
                   <ChevronDown className={`size-4 text-muted transition-transform ${isOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
                 </button>
@@ -213,7 +346,34 @@ export default function AdminOrders() {
           })}
         </ul>
       )}
-    {proofOrder && (
+
+      {data.totalPages > 1 && (
+        <nav className="flex items-center justify-center gap-2" aria-label={t('admin.orders.pagination')}>
+          <button
+            type="button"
+            disabled={page === 0}
+            onClick={() => setPage(p => Math.max(0, p - 1))}
+            className="grid size-10 cursor-pointer place-items-center rounded-lg border border-line bg-paper disabled:opacity-35 hover:border-ink"
+            aria-label={t('admin.orders.prevPage')}
+          >
+            <ChevronRight className="size-4 rtl:rotate-180" aria-hidden="true" />
+          </button>
+          <span className="px-2 text-sm font-semibold text-muted">
+            {t('admin.orders.pageOf', { page: page + 1, total: data.totalPages })}
+          </span>
+          <button
+            type="button"
+            disabled={page >= data.totalPages - 1}
+            onClick={() => setPage(p => Math.min(data.totalPages - 1, p + 1))}
+            className="grid size-10 cursor-pointer place-items-center rounded-lg border border-line bg-paper disabled:opacity-35 hover:border-ink"
+            aria-label={t('admin.orders.nextPage')}
+          >
+            <ChevronLeft className="size-4 rtl:rotate-180" aria-hidden="true" />
+          </button>
+        </nav>
+      )}
+
+      {proofOrder && (
         <div
           className="fixed inset-0 z-[90] flex items-center justify-center bg-ink/70 p-4 backdrop-blur-sm animate-fade-in"
           onClick={() => setProofOrder(null)}
@@ -227,7 +387,7 @@ export default function AdminOrders() {
               type="button"
               onClick={() => setProofOrder(null)}
               className="absolute -end-3 -top-3 grid size-9 place-items-center rounded-full bg-ink text-paper shadow-pop"
-              aria-label="Close"
+              aria-label={t('admin.orders.close')}
             >
               <X className="size-4" aria-hidden="true" />
             </button>

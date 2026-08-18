@@ -4,8 +4,11 @@ const express = require('express')
 const settingsService = require('../services/settingsService')
 const contentService = require('../services/contentService')
 const statsService = require('../services/statsService')
-const db = require('../db')
-const { badRequest } = require('../errors')
+const productService = require('../services/productService')
+const orderService = require('../services/orderService')
+const userService = require('../services/userService')
+const auditService = require('../services/auditService')
+const { addClient, corsHeadersFor } = require('../realtime')
 const { wrap } = require('../utils')
 
 const router = express.Router()
@@ -30,29 +33,62 @@ router.put('/content', wrap(async (req, res) => {
   res.json(await contentService.update(req.body))
 }))
 
-router.post('/reset', wrap(async (req, res) => {
+router.get('/events', (req, res) => {
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache, no-transform',
+    Connection: 'keep-alive',
+    'X-Accel-Buffering': 'no',
+    ...corsHeadersFor(req),
+  })
+  res.write(': connected\n\n')
+  const remove = addClient(res)
+  const heartbeat = setInterval(() => {
+    try {
+      res.write(': ping\n\n')
+    } catch (err) {
+      clearInterval(heartbeat)
+      remove()
+    }
+  }, 25000)
+  req.on('close', () => {
+    clearInterval(heartbeat)
+    remove()
+  })
+})
+
+router.delete('/products', wrap(async (req, res) => {
   const body = req.body || {}
-  const scope = body.scope === null || body.scope === undefined ? '' : String(body.scope)
-  if (scope === 'orders') {
-    await db.run('DELETE FROM order_items')
-    await db.run('DELETE FROM orders')
-    return res.json({ message: 'Orders cleared' })
-  }
-  if (scope === 'store') {
-    await db.txn(async tx => {
-      await tx.run('DELETE FROM order_items')
-      await tx.run('DELETE FROM orders')
-      await tx.run('DELETE FROM products')
-      await tx.run('DELETE FROM categories')
-      await tx.run('DELETE FROM users')
-    })
-    await settingsService.reset()
-    await contentService.reset()
-    const { seed } = require('../db/seed')
-    await seed()
-    return res.json({ message: 'Store data reset' })
-  }
-  throw badRequest('Invalid reset scope')
+  res.json(await productService.hardDelete(body.ids))
+}))
+
+router.delete('/orders', wrap(async (req, res) => {
+  const body = req.body || {}
+  res.json(await orderService.hardDelete({ ids: body.ids, all: body.all === true }))
+}))
+
+router.get('/users', wrap(async (req, res) => {
+  res.json(await userService.list(req.query))
+}))
+
+router.post('/users', wrap(async (req, res) => {
+  res.status(201).json(await userService.create(req.body))
+}))
+
+router.put('/users/:id', wrap(async (req, res) => {
+  res.json(await userService.update(req.params.id, req.body, req.user.id))
+}))
+
+router.delete('/users/:id', wrap(async (req, res) => {
+  res.json(await userService.remove(req.params.id, req.user.id))
+}))
+
+router.get('/logs', wrap(async (req, res) => {
+  res.json(await auditService.list(req.query))
+}))
+
+router.delete('/logs', wrap(async (req, res) => {
+  res.json(await auditService.clear())
 }))
 
 module.exports = router
