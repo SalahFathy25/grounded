@@ -185,6 +185,9 @@ async function ensureIdempotencyColumn() {
   if (dialect === 'pg') {
     await pool.query('ALTER TABLE orders ADD COLUMN IF NOT EXISTS idempotency_key VARCHAR(100)')
     await pool.query('CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_user_idem ON orders(user_id, idempotency_key)')
+    // Older DBs were created with CHECK (role IN ('ROLE_USER','ROLE_ADMIN')) —
+    // drop it so ROLE_SUPER_ADMIN can be stored (roles are validated in code).
+    await pool.query('ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check')
     return
   }
   const cols = sqlite.prepare('PRAGMA table_info(orders)').all()
